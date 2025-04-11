@@ -1,0 +1,5 @@
+build/
+.nvim
+session_proj
+src/test/sim*
+src/test/wave*
