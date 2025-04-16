@@ -1,6 +1,7 @@
 build/
 .nvim
 session_*
+src/test/*.out
 src/test/sim*
 src/test/wave*
 src/**/*.old
