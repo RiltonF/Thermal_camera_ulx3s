@@ -1,4 +1,4 @@
-`default_nettype none 
+`default_nettype none
 /* verilator lint_off WIDTHEXPAND */
 // Convert 8 bit data to 10bit tmds
 // out = 8 bits of data, 1 bit encoding, 1 bit inverted symbol
@@ -18,7 +18,15 @@ module tmds_gen (
         logic [$clog2(8):0] dc_bal_acc;
     } t_signals;
 
-    localparam t_signals c_reset = '{default: 0};
+    //signals for simulation
+    logic [9:0] s_encoded;
+    logic [$clog2(8):0] s_dc_bal_acc;
+    assign s_encoded = s_r.encoded;
+    assign s_dc_bal_acc = s_r.dc_bal_acc;
+
+
+    // localparam t_signals c_reset = '{default: '0};
+    localparam t_signals c_reset = '0;
 
     t_signals s_r, s_r_next;
 
@@ -61,10 +69,10 @@ module tmds_gen (
         if (i_blanking) begin
             //lookup table for what to send during blanking period
             case(i_control_data)
-                2'b00: s_r_next.encoded = 'b1101010100; 
-                2'b01: s_r_next.encoded = 'b0010101011; 
-                2'b10: s_r_next.encoded = 'b0101010100; 
-                2'b11: s_r_next.encoded = 'b1010101011; 
+                2'b00: s_r_next.encoded = 'b1101010100;
+                2'b01: s_r_next.encoded = 'b0010101011;
+                2'b10: s_r_next.encoded = 'b0101010100;
+                2'b11: s_r_next.encoded = 'b1010101011;
             endcase
             //reset the dc ballance accumulator counter
             s_r_next.dc_bal_acc = '0;
@@ -72,10 +80,10 @@ module tmds_gen (
             if (s_r.dc_bal_acc == '0 | v_word_disparity == '0) begin
                 if (v_data_word[8]) begin
                     s_r_next.encoded = {~v_data_word[8], v_data_word[8], v_data_word[7:0]};
-                    s_r_next.dc_bal_acc = s_r.dc_bal_acc + v_word_disparity;   
+                    s_r_next.dc_bal_acc = s_r.dc_bal_acc + v_word_disparity;
                 end else begin
                     s_r_next.encoded = {~v_data_word[8], v_data_word[8], ~v_data_word[7:0]};
-                    s_r_next.dc_bal_acc = s_r.dc_bal_acc - v_word_disparity;   
+                    s_r_next.dc_bal_acc = s_r.dc_bal_acc - v_word_disparity;
                 end
             end
             //if the signs equal on both

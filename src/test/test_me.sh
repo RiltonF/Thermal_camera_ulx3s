@@ -26,9 +26,9 @@ fi
 
 # Run the simulation
 echo "[INFO] Running simulation..."
-vvp $OUT_FILE
+vvp $OUT_FILE -fst
 
 if [ -z "$NO_WAVE" ]; then
 	echo "Opening Wave file"
-	gtkwave wave.vcd wave.gtkw	
+	gtkwave --rcvar 'use_big_fonts 1' wave.vcd wave.gtkw	
 fi
