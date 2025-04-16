@@ -4,7 +4,8 @@ TOP        ?= top
 DEVICE      := 25
 PACKAGE     := CABGA381
 LPF         := ../constraints/ulx3s_v20_edited.lpf
-SV_SOURCES  := $(wildcard src/**/*.sv) $(wildcard src/*.sv)
+# SV_SOURCES  := $(wildcard src/**/*.sv) $(wildcard src/*.sv)
+SV_SOURCES  := $(wildcard src/*.sv)
 V_SOURCES   := $(wildcard src/**/*.v) $(wildcard src/*.v)
 HDL_SOURCES := $(V_SOURCES) $(SV_SOURCES)
 BUILD_DIR   := build
@@ -63,7 +64,7 @@ $(BUILD_DIR):
 
 $(SYNTH_V): $(SV_SOURCES) | $(BUILD_DIR)
 	$(SV2V) $(SV_SOURCES) > $(SYNTH_V)
-	cat $(V_SOURCES) >> $(SYNTH_V)
+#	cat $(V_SOURCES) >> $(SYNTH_V)
 
 
 $(info TOP = $(TOP))
@@ -72,7 +73,7 @@ $(info SV_SOURCES = $(SV_SOURCES))
 
 $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
 	$(YOSYS) \
-		-p "read -sv $(SV_SOURCES)" \
+		-p "read -sv $(SYNTH_V)" \
 		-p "read -vlog2k $(CLK_SOURCES)" \
 		-p "synth_ecp5 -top $(TOP) -json $(JSON)"
 

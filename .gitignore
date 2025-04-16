@@ -1,5 +1,6 @@
 build/
 .nvim
-session_proj
+session_*
 src/test/sim*
 src/test/wave*
+src/**/*.old
