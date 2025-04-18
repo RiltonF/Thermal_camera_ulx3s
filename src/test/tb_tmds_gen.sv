@@ -46,6 +46,8 @@ module tb_tmds_gen();
     begin
         rst = 1;
         i_data = '0;
+        i_control_data = '0;
+        i_blanking = '0;
         wait_cycles(4);
         rst = 0;
     end
@@ -62,37 +64,20 @@ module tb_tmds_gen();
     endtask
 
     `TEST_SUITE("TESTSUITE_NAME")
-
-    //  Available macros:"
-    //
-    //    - `MSG("message"):       Print a raw white message
-    //    - `INFO("message"):      Print a blue message with INFO: prefix
-    //    - `SUCCESS("message"):   Print a green message if SUCCESS: prefix
-    //    - `WARNING("message"):   Print an orange message with WARNING: prefix and increment warning counter
-    //    - `CRITICAL("message"):  Print a purple message with CRITICAL: prefix and increment critical counter
-    //    - `FAILURE("message"):   Print a red message with FAILURE: prefix and do **not** increment error counter
-    //    - `ERROR("message"):     Print a red message with ERROR: prefix and increment error counter
-    //
     //    - `FAIL_IF(aSignal):                 Increment error counter if evaluaton is true
     //    - `FAIL_IF_NOT(aSignal):             Increment error coutner if evaluation is false
     //    - `FAIL_IF_EQUAL(aSignal, 23):       Increment error counter if evaluation is equal
     //    - `FAIL_IF_NOT_EQUAL(aSignal, 45):   Increment error counter if evaluation is not equal
     //    - `ASSERT(aSignal):                  Increment error counter if evaluation is not true
     //    - `ASSERT(aSignal == 0):           Increment error counter if evaluation is not true
-    //
-    //  Available flag:
-    //
-    //    - `LAST_STATUS: tied to 1 if last macro did experience a failure, else tied to 0
 
     `UNIT_TEST("TESTCASE_NAME")
         #1;
-        wait_cycles(40);
-        // Describe here the testcase scenario
-        //
-        // Because SVUT uses long nested macros, it's possible
-        // some local variable declaration leads to compilation issue.
-        // You should declare your variables after the IOs declaration to avoid that.
-
+        i_data = '1;
+        repeat (30) begin
+            wait_cycles(1);
+            i_data = ~i_data;
+        end
     `UNIT_TEST_END
 
     `TEST_SUITE_END

@@ -21,14 +21,15 @@ module tmds_gen (
     //signals for simulation
     logic [9:0] s_encoded;
     logic [$clog2(8):0] s_dc_bal_acc;
-    assign s_encoded = s_r.encoded;
-    assign s_dc_bal_acc = s_r.dc_bal_acc;
 
 
     // localparam t_signals c_reset = '{default: '0};
     localparam t_signals c_reset = '0;
 
     t_signals s_r, s_r_next;
+
+    assign s_encoded = s_r.encoded;
+    assign s_dc_bal_acc = s_r.dc_bal_acc;
 
     always_comb begin
         logic [$clog2(8):0] v_ones_count, v_word_disparity;
@@ -41,7 +42,7 @@ module tmds_gen (
 
         //count ones in the data
         v_ones_count = '0;
-        foreach (i_data[x])
+        for (int x = 0; x < $bits(i_data); x++)
             v_ones_count += i_data[x];
 
         //xored data
@@ -63,7 +64,7 @@ module tmds_gen (
 
         //count again the number of ones after xor/xnor-ing
         v_word_disparity = 'b1100;
-        foreach (i_data[x])
+        for (int x = 0; x < $bits(v_data_word); x++)
             v_word_disparity += v_data_word[x];
 
         if (i_blanking) begin
