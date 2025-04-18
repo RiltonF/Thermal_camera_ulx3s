@@ -73,10 +73,17 @@ $(info SV_SOURCES = $(SV_SOURCES))
 
 $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
 	$(YOSYS) \
-		-p "plugin -i slang" \
+		-m slang \
+		-f slang \
 		-p "synth_ecp5 -top $(TOP) -json $(JSON)" \
-		-p "read -vlog2k $(CLK_SOURCES)" \
-		-p "read -sv $(SV_SOURCES) --top $(TOP)"
+		--top $(TOP) $(SV_SOURCES) $(CLK_SOURCES)
+
+# $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
+# 	$(YOSYS) \
+# 		-p "plugin -i slang" \
+# 		-p "synth_ecp5 -top $(TOP) -json $(JSON)" \
+# 		-p "read -vlog2k $(CLK_SOURCES)" \
+# 		-p "read -sv $(SV_SOURCES) --top $(TOP)"
 
 $(ASC): $(JSON)
 	$(NEXTPNR-ECP5) \

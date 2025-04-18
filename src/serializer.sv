@@ -57,8 +57,6 @@ module serializer #(
                     //shift to the right by one, ring buffer style
                     s_clk_out <= {s_clk_out[0], s_clk_out[p_data_width-1:1]};
                 end
-            end else begin
-                s_clk_out <= s_clk_out;
             end
 
             if (s_clk_out == c_init_count) begin
