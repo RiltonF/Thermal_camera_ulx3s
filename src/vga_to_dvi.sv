@@ -9,25 +9,16 @@ module vga_to_dvi #(
     input  logic i_vsync,
     input  logic i_blank,
     input  logic [7:0] i_data [3], // RGB data
-    output logic [2:0] o_data_p // [clock, red, green, blue]
+    output logic [2:0] o_data_p // [red, green, blue]
 );
     //generate the rgb colors based on mode
     generate
       for (genvar i = 0; i < 3; i++) begin : gen_colors_dvi
         logic [9:0] s_encoded;
-        logic [1:0] s_shift_bits, s_clk_serial, s_control_data;
+        logic [1:0] s_shift_bits, s_control_data;
 
         assign s_control_data = (i == 2) ? {i_vsync, i_hsync} : 2'b0;
-        // assign s_control_data = {i_vsync, i_hsync};
-        
-        // tmds_encoder_dvi inst_tmds_gen (
-        //   .clk_pix(i_clk_pixel),
-        //   .rst_pix(i_rst),
-        //   .data_in(i_data[i]),
-        //   .ctrl_in(s_control_data), //only set one or all colors? idk...
-        //   .de(~i_blank),
-        //   .tmds(s_encoded)
-        // );
+
         tmds_gen inst_tmds_gen (
           .i_clk(i_clk_pixel),
           .i_rst(i_rst),
@@ -45,7 +36,7 @@ module vga_to_dvi #(
           .i_rst       (i_rst),
           .i_data      (s_encoded),
           .o_data      (s_shift_bits),
-          .o_clk       (s_clk_serial)
+          .o_clk       ()
         );
 
         if (p_ddr_mode) begin

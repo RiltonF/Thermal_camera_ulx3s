@@ -5,15 +5,14 @@ module top (
     output logic [7:0] led,
     output logic [3:0] gpdi_dp
 );
+    localparam bit p_ddr_mode = 1; //works for both!
     logic s_rst;
-    logic s_clk_pixel;
-    logic s_clk_ddr;
-    logic s_clk_sdr;
-    logic s_clk_shift;
+    logic s_clk_pixel, s_clk_shift;
+    logic s_clk_sdr_pixel, s_clk_ddr_pixel;
+    logic s_clk_sdr, s_clk_ddr;
 
-    localparam bit p_ddr_mode = 1;
+    assign s_clk_pixel = (p_ddr_mode) ? s_clk_ddr_pixel : s_clk_sdr_pixel;
     assign s_clk_shift = (p_ddr_mode) ? s_clk_ddr : s_clk_sdr;
-    // assign s_clk_pixel = clk_25mhz;
     assign s_rst = btn[1];
 
     logic s_hsync;
@@ -27,7 +26,9 @@ module top (
       .o_hsync     (s_hsync),
       .o_vsync     (s_vsync),
       .o_blank     (s_blank),
-      .o_data_test (s_colors)
+      .o_data_test (s_colors),
+      .o_x_pos(),
+      .o_y_pos()
     );
 
     vga_to_dvi #(
@@ -56,12 +57,13 @@ module top (
     clk1 inst_clk_gen_sdr (
       .clkin(clk_25mhz),
       .clkout0(s_clk_sdr), //250
+      .clkout1(s_clk_sdr_pixel), //25
       .locked(led[0])
       );
     clk2 inst_clk_gen_ddr (
       .clkin(clk_25mhz),
-      .clkout1(s_clk_pixel), //25
       .clkout0(s_clk_ddr), //125
+      .clkout1(s_clk_ddr_pixel), //25
       .locked(led[1])
       );
 

@@ -33,7 +33,7 @@ CLK0_FILE_NAME ?= $(CLOCKS_DIR)/$(CLK0_NAME).v
 CLK0_OPTIONS ?= --clkin 25 --clkout0 100 --clkout1 50 --phase1 0 --clkout2 25 --phase2 0 --clkout3 125 --phase3 0
 CLK1_NAME ?= clk1
 CLK1_FILE_NAME ?= $(CLOCKS_DIR)/$(CLK1_NAME).v
-CLK1_OPTIONS ?= --clkin 25 --clkout0 250
+CLK1_OPTIONS ?= --clkin 25 --clkout0 250 --clkout1 25 --phase1 0
 CLK2_NAME ?= clk2
 CLK2_FILE_NAME ?= $(CLOCKS_DIR)/$(CLK2_NAME).v
 CLK2_OPTIONS ?= --clkin 25 --clkout0 125 --clkout1 25 --phase1 0
@@ -89,7 +89,7 @@ $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
 
 $(ASC): $(JSON)
 	$(NEXTPNR-ECP5) \
-		--${DEVICE}k \
+		--${DEVICE}k --speed 8 \
 		--package $(PACKAGE) \
 		--json $(JSON) \
 		--lpf $(LPF) \

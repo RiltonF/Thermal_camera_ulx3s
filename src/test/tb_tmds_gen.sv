@@ -2,7 +2,6 @@
 `include "svut_h.sv"
 // Specify the module to load or on files.f
 `include "tmds_gen.sv"
-`include "tmds_encoder_dvi.sv"
 `timescale 1 ns / 100 ps
 
 module tb_tmds_gen();
@@ -15,7 +14,6 @@ module tb_tmds_gen();
     logic [1:0] i_control_data;
     logic i_blanking;
     logic [9:0] o_encoded;
-    logic [9:0] s_encoded;
 
     tmds_gen 
     dut 
@@ -28,14 +26,6 @@ module tb_tmds_gen();
     .o_encoded      (o_encoded)
     );
 
-    tmds_encoder_dvi inst_tmds_gen (
-      .clk_pix(clk),
-      .rst_pix(rst),
-      .data_in(i_data),
-      .ctrl_in(i_control_data), //only set one or all colors? idk...
-      .de(~i_blanking),
-      .tmds(s_encoded)
-    );
     task automatic wait_cycles(input int n);
         repeat (n) @(posedge clk);
     endtask
