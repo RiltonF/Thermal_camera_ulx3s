@@ -13,14 +13,26 @@ module vga_to_dvi #(
 );
     //generate the rgb colors based on mode
     generate
-      for (genvar i = 0; i < 3; i++) begin
+      for (genvar i = 0; i < 3; i++) begin : gen_colors_dvi
         logic [9:0] s_encoded;
-        logic [1:0] s_shift_bits, s_clk_serial;
+        logic [1:0] s_shift_bits, s_clk_serial, s_control_data;
+
+        assign s_control_data = (i == 2) ? {i_vsync, i_hsync} : 2'b0;
+        // assign s_control_data = {i_vsync, i_hsync};
+        
+        // tmds_encoder_dvi inst_tmds_gen (
+        //   .clk_pix(i_clk_pixel),
+        //   .rst_pix(i_rst),
+        //   .data_in(i_data[i]),
+        //   .ctrl_in(s_control_data), //only set one or all colors? idk...
+        //   .de(~i_blank),
+        //   .tmds(s_encoded)
+        // );
         tmds_gen inst_tmds_gen (
           .i_clk(i_clk_pixel),
           .i_rst(i_rst),
           .i_data(i_data[i]),
-          .i_control_data({i_vsync, i_hsync}), //only set one or all colors? idk...
+          .i_control_data(s_control_data), //only set one or all colors? idk...
           .i_blanking(i_blank),
           .o_encoded(s_encoded)
         );

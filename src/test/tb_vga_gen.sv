@@ -4,7 +4,7 @@
 `include "vga_gen.sv"
 `timescale 1 ns / 100 ps
 
-module vga_gen_testbench();
+module tb_vga_gen();
 
     `SVUT_SETUP
 
@@ -33,14 +33,10 @@ module vga_gen_testbench();
     // always #2 aclk = !aclk;
 
     // To dump data for visualization:
-    // initial begin
-    //     Default wavefile name with VCD format
-    //     $dumpfile("vga_gen_testbench.vcd");
-    //     Or use FST format with -fst argument
-    //     $dumpfile("vga_gen_testbench.fst");
-    //     Dump all the signals of the design
-    //     $dumpvars(0, vga_gen_testbench);
-    // end
+    initial begin
+        $dumpfile("wave.fst");
+        $dumpvars(0, tb_vga_gen);
+    end
 
     // Setup time format when printing with $realtime()
     initial $timeformat(-9, 1, "ns", 8);
@@ -48,6 +44,9 @@ module vga_gen_testbench();
     task setup(msg="");
     begin
         // setup() runs when a test begins
+        i_rst = 1;
+        #100ns;
+        i_rst = 0;
     end
     endtask
 
@@ -58,29 +57,13 @@ module vga_gen_testbench();
     endtask
 
     `TEST_SUITE("TESTSUITE_NAME")
-
-    //  Available macros:"
-    //
-    //    - `MSG("message"):       Print a raw white message
-    //    - `INFO("message"):      Print a blue message with INFO: prefix
-    //    - `SUCCESS("message"):   Print a green message if SUCCESS: prefix
-    //    - `WARNING("message"):   Print an orange message with WARNING: prefix and increment warning counter
-    //    - `CRITICAL("message"):  Print a purple message with CRITICAL: prefix and increment critical counter
-    //    - `FAILURE("message"):   Print a red message with FAILURE: prefix and do **not** increment error counter
-    //    - `ERROR("message"):     Print a red message with ERROR: prefix and increment error counter
-    //
-    //    - `FAIL_IF(aSignal):                 Increment error counter if evaluaton is true
-    //    - `FAIL_IF_NOT(aSignal):             Increment error coutner if evaluation is false
-    //    - `FAIL_IF_EQUAL(aSignal, 23):       Increment error counter if evaluation is equal
-    //    - `FAIL_IF_NOT_EQUAL(aSignal, 45):   Increment error counter if evaluation is not equal
-    //    - `ASSERT(aSignal):                  Increment error counter if evaluation is not true
-    //    - `ASSERT(aSignal == 0):           Increment error counter if evaluation is not true
-    //
-    //  Available flag:
-    //
-    //    - `LAST_STATUS: tied to 1 if last macro did experience a failure, else tied to 0
-
     `UNIT_TEST("TESTCASE_NAME")
+        #1;
+        force dut.y_counter = 'd477;
+        repeat (4) @(posedge clk_pixel);
+        release dut.y_counter;
+        repeat (200000) @(posedge clk_pixel);
+        // #10000000ns;
 
         // Describe here the testcase scenario
         //

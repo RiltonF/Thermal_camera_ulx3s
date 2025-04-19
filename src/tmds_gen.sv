@@ -32,10 +32,12 @@ module tmds_gen (
     assign s_dc_bal_acc = s_r.dc_bal_acc;
 
     always_comb begin
-        logic [$clog2(8):0] v_ones_count, v_word_disparity;
+        logic [$clog2(8):0] v_ones_count;
+        logic [$clog2(8):0] v_word_disparity;
         logic [8:0] v_xored_data, v_xnored_data;
         logic [8:0] v_data_word;
         logic v_is_xored;
+        
 
         //initial assignment
         s_r_next = s_r;
@@ -48,13 +50,13 @@ module tmds_gen (
         //xored data
         v_xored_data[0] = i_data[0];
         for (int i = 1; i < 8; i++)
-            v_xored_data[i] = i_data[i-1] ^ i_data[i];
+            v_xored_data[i] = v_xored_data[i-1] ^ i_data[i];
         v_xored_data[8] = 1'b1; //xors represented with 1
 
         //xnored data
         v_xnored_data[0] = i_data[0];
         for (int i = 1; i < 8; i++)
-            v_xnored_data[i] = ~(i_data[i-1] ^ i_data[i]);
+            v_xnored_data[i] = v_xnored_data[i-1] ~^ i_data[i];
         v_xnored_data[8] = 1'b0; //xnors represented with 0
 
         //XOR if less than 4 ones, or 4 ones and first bit is 1
@@ -63,8 +65,8 @@ module tmds_gen (
 
 
         //count again the number of ones after xor/xnor-ing
-        v_word_disparity = 'b1100;
-        for (int x = 0; x < $bits(v_data_word); x++)
+        v_word_disparity = 'b1100; // = -4
+        for (int x = 0; x < 8; x++)
             v_word_disparity += v_data_word[x];
 
         if (i_blanking) begin
@@ -78,7 +80,7 @@ module tmds_gen (
             //reset the dc ballance accumulator counter
             s_r_next.dc_bal_acc = '0;
         end else begin
-            if (s_r.dc_bal_acc == '0 | v_word_disparity == '0) begin
+            if (s_r.dc_bal_acc == '0 || v_word_disparity == '0) begin
                 if (v_data_word[8]) begin
                     s_r_next.encoded = {~v_data_word[8], v_data_word[8], v_data_word[7:0]};
                     s_r_next.dc_bal_acc = s_r.dc_bal_acc + v_word_disparity;
@@ -90,12 +92,12 @@ module tmds_gen (
             //if the signs equal on both
             else if (s_r.dc_bal_acc[3] == v_word_disparity[3]) begin
                 s_r_next.encoded = { 1'b1, v_data_word[8], ~v_data_word[7:0]};
-                s_r_next.dc_bal_acc = s_r.dc_bal_acc + v_data_word[8] - v_word_disparity;
+                s_r_next.dc_bal_acc = s_r.dc_bal_acc + {'0,v_data_word[8]} - v_word_disparity;
             end
             //not equal, signs
             else begin
                 s_r_next.encoded = { 1'b0, v_data_word[8], v_data_word[7:0]};
-                s_r_next.dc_bal_acc = s_r.dc_bal_acc - ~v_data_word[8] + v_word_disparity;
+                s_r_next.dc_bal_acc = s_r.dc_bal_acc - {'0,~v_data_word[8]} + v_word_disparity;
             end
         end
 

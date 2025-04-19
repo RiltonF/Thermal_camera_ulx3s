@@ -7,6 +7,7 @@ LPF         := ../constraints/ulx3s_v20_edited.lpf
 # SV_SOURCES  := $(wildcard src/**/*.sv) $(wildcard src/*.sv)
 SV_SOURCES  := $(wildcard src/*.sv)
 V_SOURCES   := $(wildcard src/**/*.v) $(wildcard src/*.v)
+V_BLACKBOX  := $(wildcard src/misc/*.sv)
 HDL_SOURCES := $(SYNTH_V) $(V_SOURCES) $(SV_SOURCES)
 BUILD_DIR   := build
 CLOCKS_DIR  := $(BUILD_DIR)/clocks
@@ -35,7 +36,7 @@ CLK1_FILE_NAME ?= $(CLOCKS_DIR)/$(CLK1_NAME).v
 CLK1_OPTIONS ?= --clkin 25 --clkout0 250
 CLK2_NAME ?= clk2
 CLK2_FILE_NAME ?= $(CLOCKS_DIR)/$(CLK2_NAME).v
-CLK2_OPTIONS ?= --clkin 25 --clkout0 125 
+CLK2_OPTIONS ?= --clkin 25 --clkout0 125 --clkout1 25 --phase1 0
 CLK3_NAME ?= clk3
 CLK3_FILE_NAME ?= $(CLOCKS_DIR)/$(CLK3_NAME).v
 CLK3_OPTIONS ?= --clkin 25 --clkout0 250 --clkout1 250 --phase1 0 --clkout2 125 --phase2 0
@@ -72,12 +73,13 @@ $(info JSON = $(JSON))
 $(info SV_SOURCES = $(SV_SOURCES))
 
 $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
-	$(YOSYS) \
+	$(YOSYS) -l build/yosys.log \
 		-m slang \
 		-f slang \
-		-p "synth_ecp5 -top $(TOP) -json $(JSON)" \
-		--top $(TOP) $(SV_SOURCES) $(CLK_SOURCES)
-
+		-p "read_verilog $(CLK_SOURCES) $(V_BLACKBOX) " \
+		-p "read_slang $(SV_SOURCES) " \
+		-p "synth_ecp5 -top $(TOP) -json $(JSON)" 
+		
 # $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
 # 	$(YOSYS) \
 # 		-p "plugin -i slang" \
