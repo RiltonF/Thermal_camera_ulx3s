@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ns / 1ps
 module vga_to_dvi #(
     parameter bit p_ddr_mode = 1'b0
   )(

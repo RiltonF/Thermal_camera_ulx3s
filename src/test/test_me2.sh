@@ -17,6 +17,7 @@ OUT_FILE="simv"
 # Compile with Icarus Verilog (you can swap for Verilator if needed)
 echo "[INFO] Running simulation..."
 svutRun -test $TB_FILE -fst
+# svutRun -test $TB_FILE -fst -sim verilator
 
 if [ $? -ne 0 ]; then
   echo "[ERROR] Compilation failed."

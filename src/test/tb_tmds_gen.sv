@@ -37,6 +37,7 @@ module tb_tmds_gen();
         // $dumpfile("wave.vcd");
         $dumpfile("wave.fst");
         $dumpvars(0, tb_tmds_gen);
+        $dumpvars(0, tb_tmds_gen.dut.s_r.encoded);
     end
 
     // Setup time format when printing with $realtime()

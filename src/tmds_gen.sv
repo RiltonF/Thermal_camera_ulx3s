@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ns / 1ps
 /* verilator lint_off WIDTHEXPAND */
 // Convert 8 bit data to 10bit tmds
 // out = 8 bits of data, 1 bit encoding, 1 bit inverted symbol
@@ -18,16 +19,15 @@ module tmds_gen (
         logic [$clog2(8):0] dc_bal_acc;
     } t_signals;
 
-    //signals for simulation
-    logic [9:0] s_encoded;
-    logic [$clog2(8):0] s_dc_bal_acc;
-
 
     // localparam t_signals c_reset = '{default: '0};
     localparam t_signals c_reset = '0;
 
     t_signals s_r, s_r_next;
 
+    //signals for simulation
+    logic [9:0] s_encoded;
+    logic [$clog2(8):0] s_dc_bal_acc;
     assign s_encoded = s_r.encoded;
     assign s_dc_bal_acc = s_r.dc_bal_acc;
 

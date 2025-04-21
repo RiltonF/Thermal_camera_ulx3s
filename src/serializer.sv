@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ns / 1ps
 /* verilator lint_off WIDTHEXPAND */
 // No native support for 3.3v hdmi differential so we fake it
 

@@ -22,7 +22,7 @@ module tb_vga_gen();
     .i_rst       (i_rst),
     .o_hsync     (o_hsync),
     .o_vsync     (o_vsync),
-    .o_blank     (o_blank),
+    .o_data_en(o_blank),
     .o_data      (o_data)
     );
 

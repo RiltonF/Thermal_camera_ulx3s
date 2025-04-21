@@ -1,80 +1,106 @@
 `default_nettype none
+`timescale 1ns / 1ps
 /* verilator lint_off WIDTHEXPAND */
 // No native support for 3.3v hdmi differential so we fake it
 
-module vga_gen (
+module vga_gen #(
+    parameter int p_pixel_width       = 640,
+    parameter int p_pixel_height      = 480, //+1 adjusted due to timings
+
+    parameter int p_hsync_front_porch =  16,
+    parameter int p_hsync_pulse       =  96,
+    parameter int p_hsync_back_porch  =  48,
+
+    parameter int p_vsync_front_porch =  10,
+    parameter int p_vsync_pulse       =  2,
+    parameter int p_vsync_back_porch  =  33,
+
+    parameter int p_latency_adjust = 2,
+
+    parameter bit p_hsync_polarity = 1, //0=neg, 1=pos
+    parameter bit p_vsync_polarity = 1,  //0=neg, 1=pos
+    parameter int p_count_width = 16
+    
+    ) (
     input  logic i_clk_pixel,
     input  logic i_rst,
     output logic o_hsync,
     output logic o_vsync,
-    output logic o_blank,
+    output logic o_data_en,
+    output logic o_frame,
+    output logic o_line,
     output logic [7:0] o_data_test [3], // RGB data
-    output logic [9:0] o_x_pos, // update with $clog2?
-    output logic [9:0] o_y_pos // update with $clog2?
+    output logic signed [p_count_width-1:0] o_x_pos,
+    output logic signed [p_count_width-1:0] o_y_pos
 );
-    localparam int c_pixel_width       = 640;
-    localparam int c_pixel_height      = 480; //+1 adjusted due to timings
+    // We're first generating the blanking part, and then the visible part
+    localparam signed c_x_origin = 0 - p_hsync_front_porch - p_hsync_pulse - p_hsync_back_porch;
+    localparam signed c_hsync_start = c_x_origin + p_hsync_front_porch;
+    localparam signed c_hsync_end = c_hsync_start + p_hsync_pulse;
 
-    localparam int c_hsync_front_porch =  16;
-    localparam int c_hsync_pulse       =  96;
-    localparam int c_hsync_back_porch  =  48;
+    localparam signed c_y_origin = 0 - p_vsync_front_porch - p_vsync_pulse - p_vsync_back_porch;
+    localparam signed c_vsync_start = c_y_origin + p_vsync_front_porch;
+    localparam signed c_vsync_end = c_vsync_start + p_vsync_pulse;
 
-    localparam int c_hsync_start = c_pixel_width + c_hsync_front_porch-1;
-    localparam int c_hsync_end = c_hsync_start + c_hsync_pulse;
-    localparam int c_full_width = c_pixel_width + c_hsync_front_porch
-                                + c_hsync_pulse + c_hsync_back_porch-1;
+    localparam signed c_x_start = 0;
+    localparam signed c_x_end = p_pixel_width - 1;
+    localparam signed c_y_start = 0;
+    localparam signed c_y_end = p_pixel_height - 1;
 
-    localparam int c_vsync_front_porch =  10;
-    localparam int c_vsync_pulse       =  2;
-    localparam int c_vsync_back_porch  =  33;
+    typedef struct packed {
+        logic signed [p_count_width-1:0] x_counter;
+        logic signed [p_count_width-1:0] y_counter;
+        logic hsync;
+        logic vsync;
+        logic data_en;
+        logic frame;
+        logic line;
+    } t_video_gen;
 
-    localparam int c_vsync_start = c_pixel_height + c_vsync_front_porch-1;
-    localparam int c_vsync_end = c_vsync_start + c_vsync_pulse;
-    localparam int c_full_height = c_pixel_height + c_vsync_front_porch
-                                 + c_vsync_pulse + c_vsync_back_porch-1;
+    t_video_gen s_r, s_r_next;
 
-    logic [$clog2(c_full_width)-1:0] x_counter, x_counter_next;
-    logic [$clog2(c_full_height)-1:0] y_counter, y_counter_next;
-
-    assign o_x_pos = x_counter;
-    assign o_y_pos = y_counter;
+    localparam t_video_gen c_rst_val = '{
+        hsync: p_hsync_polarity,
+        vsync: p_vsync_polarity,
+        default: '0
+    };
 
     always_comb begin
-        x_counter_next = x_counter;
-        y_counter_next = y_counter;
+        //init
+        s_r_next = s_r;
 
-        if (x_counter < c_full_width) begin
-            x_counter_next++;
+        if (s_r.x_counter < c_x_end) begin
+            s_r_next.x_counter++;
         end else begin
-            x_counter_next = '0;
-            y_counter_next = (y_counter < c_full_height) ? y_counter + 1'b1 : '0;
+            s_r_next.x_counter = c_x_origin;
+            s_r_next.y_counter = (s_r.y_counter < c_y_end) ? s_r.y_counter + 1'b1 : c_y_origin;
         end
 
-        o_hsync = ~((x_counter >= c_hsync_start) & (x_counter < c_hsync_end));
-        o_vsync = ~((y_counter >= c_vsync_start) & (y_counter < c_vsync_end));
-        o_blank = ~((x_counter < c_pixel_width) & (y_counter < c_pixel_height));
+        s_r_next.hsync = p_hsync_polarity ^ ((s_r.x_counter >= c_hsync_start) & (s_r.x_counter < c_hsync_end));
+        s_r_next.vsync = p_vsync_polarity ^ ((s_r.y_counter >= c_vsync_start) & (s_r.y_counter < c_vsync_end));
+        s_r_next.data_en = (s_r.x_counter >= c_x_start) & (s_r.y_counter >= c_y_start);
+
+        s_r_next.frame = (s_r.x_counter == c_x_start) & (s_r.y_counter == c_y_start);
+        s_r_next.line = s_r.x_counter == c_x_start;
+
+        //output assignments
+        o_hsync = s_r.hsync;
+        o_vsync = s_r.vsync;
+        o_data_en = s_r.data_en;
+        o_x_pos = s_r.x_counter;
+        o_y_pos = s_r.y_counter;
         // Red, Green, Blue
-        o_data_test[2] = '0;
-        o_data_test[1] = '0;
-        o_data_test[0] = '0;
-        // o_data_test[0] = y_counter[7:0];
-        // o_data_test[1] = y_counter[7:0];
-        // o_data_test[2] = y_counter[7:0];
-        // o_data_test[2] = y_counter[2+:8];
-        // o_data_test[1] = x_counter[2+:8];
-        // o_data_test[0] = '1;
-        o_data_test[2] = {x_counter[5:0] & {6{y_counter[4:3]==~x_counter[4:3]}}, 2'b00};
-        o_data_test[1] = x_counter[7:0] & {8{y_counter[6]}};
-        o_data_test[0] = y_counter[7:0];
+        o_data_test[2] = {s_r.x_counter[5:0] & {6{s_r.y_counter[4:3]==~s_r.x_counter[4:3]}}, 2'b00};
+        o_data_test[1] = s_r.x_counter[7:0] & {8{s_r.y_counter[6]}};
+        o_data_test[0] = s_r.y_counter[7:0];
     end
 
     always_ff @(posedge i_clk_pixel) begin
         if (i_rst) begin
-            x_counter <= '0;
-            y_counter <= '0;
+            s_r <= c_rst_val;
+            // s_r <= '0;
         end else begin
-            x_counter <= x_counter_next;
-            y_counter <= y_counter_next;
+            s_r <= s_r_next;
         end
     end
 endmodule

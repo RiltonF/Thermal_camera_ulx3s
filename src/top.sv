@@ -20,12 +20,13 @@ module top (
     logic s_blank;
     logic [7:0] s_colors [3];
 
+    // vga_gen_simple inst_vga_gen (
     vga_gen inst_vga_gen (
       .i_clk_pixel (s_clk_pixel),
       .i_rst       (s_rst),
       .o_hsync     (s_hsync),
       .o_vsync     (s_vsync),
-      .o_blank     (s_blank),
+      .o_data_en   (s_blank),
       .o_data_test (s_colors),
       .o_x_pos(),
       .o_y_pos()
@@ -39,7 +40,7 @@ module top (
       .i_rst       (s_rst),
       .i_hsync     (s_hsync),
       .i_vsync     (s_vsync),
-      .i_blank     (s_blank),
+      .i_blank     (~s_blank),
       .i_data      (s_colors),
       .o_data_p    (gpdi_dp[2:0])
     );
