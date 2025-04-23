@@ -15,8 +15,6 @@ module vga_gen #(
     parameter int p_vsync_pulse       =  2,
     parameter int p_vsync_back_porch  =  33,
 
-    parameter int p_latency_adjust = 2,
-
     parameter bit p_hsync_polarity = 1, //0=neg, 1=pos
     parameter bit p_vsync_polarity = 1,  //0=neg, 1=pos
     parameter int p_count_width = 16
@@ -87,6 +85,8 @@ module vga_gen #(
         o_hsync = s_r.hsync;
         o_vsync = s_r.vsync;
         o_data_en = s_r.data_en;
+        o_frame = s_r.frame;
+        o_line = s_r.line;
         o_x_pos = s_r.x_counter;
         o_y_pos = s_r.y_counter;
         // Red, Green, Blue

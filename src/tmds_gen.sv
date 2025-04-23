@@ -92,12 +92,12 @@ module tmds_gen (
             //if the signs equal on both
             else if (s_r.dc_bal_acc[3] == v_word_disparity[3]) begin
                 s_r_next.encoded = { 1'b1, v_data_word[8], ~v_data_word[7:0]};
-                s_r_next.dc_bal_acc = s_r.dc_bal_acc + {'0,v_data_word[8]} - v_word_disparity;
+                s_r_next.dc_bal_acc = s_r.dc_bal_acc + {3'b0,v_data_word[8]} - v_word_disparity;
             end
             //not equal, signs
             else begin
                 s_r_next.encoded = { 1'b0, v_data_word[8], v_data_word[7:0]};
-                s_r_next.dc_bal_acc = s_r.dc_bal_acc - {'0,~v_data_word[8]} + v_word_disparity;
+                s_r_next.dc_bal_acc = s_r.dc_bal_acc - {3'b0,~v_data_word[8]} + v_word_disparity;
             end
         end
 

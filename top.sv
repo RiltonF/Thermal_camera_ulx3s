@@ -17,19 +17,42 @@ module top (
 
     logic s_hsync;
     logic s_vsync;
-    logic s_blank;
+    logic s_de;
+    logic s_frame;
+    logic s_line;
     logic [7:0] s_colors [3];
+    logic [7:0] s_colors2 [3];
+    logic [7:0] s_colors3 [3];
+    logic signed [15:0] s_x_pos;
+    logic signed [15:0] s_y_pos;
 
-    // vga_gen_simple inst_vga_gen (
+    framebuffer inst_framebuffer (
+      .i_clk_pixel (s_clk_pixel),
+      .i_rst       (s_rst),
+      .i_frame(s_frame),
+      .i_line(s_line),
+      .i_x_pos(s_x_pos),
+      .i_y_pos(s_y_pos),
+      .debug_sig(led[2]),
+      .o_data(s_colors)
+    );
+
+    assign s_colors3[0] = s_colors[0];
+    assign s_colors3[1] = s_colors[1];
+    assign s_colors3[2] = s_colors[2];
+    // assign s_colors3[2] = s_colors2[2];
+
     vga_gen inst_vga_gen (
       .i_clk_pixel (s_clk_pixel),
       .i_rst       (s_rst),
       .o_hsync     (s_hsync),
       .o_vsync     (s_vsync),
-      .o_data_en   (s_blank),
-      .o_data_test (s_colors),
-      .o_x_pos(),
-      .o_y_pos()
+      .o_data_en   (s_de),
+      .o_data_test (s_colors2),
+      .o_frame(s_frame),
+      .o_line(s_line),
+      .o_x_pos(s_x_pos),
+      .o_y_pos(s_y_pos)
     );
 
     vga_to_dvi #(
@@ -40,8 +63,8 @@ module top (
       .i_rst       (s_rst),
       .i_hsync     (s_hsync),
       .i_vsync     (s_vsync),
-      .i_blank     (~s_blank),
-      .i_data      (s_colors),
+      .i_blank     (~s_de),
+      .i_data      (s_colors3),
       .o_data_p    (gpdi_dp[2:0])
     );
 
@@ -49,11 +72,11 @@ module top (
     assign gpdi_dp[3] = s_clk_pixel;
 
     assign led[7] = s_clk_pixel;
-    assign led[6] = s_blank;
-    assign led[5] = s_blank;
+    assign led[6] = s_line;
+    assign led[5] = s_frame;
     assign led[4] = s_rst;
     assign led[3] = s_vsync;
-    assign led[2] = s_hsync;
+    // assign led[2] = s_hsync;
 
     clk1 inst_clk_gen_sdr (
       .clkin(clk_25mhz),

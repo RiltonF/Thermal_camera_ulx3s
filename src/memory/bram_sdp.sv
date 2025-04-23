@@ -1,0 +1,44 @@
+// Project F Library - Simple Dual-Port Block RAM
+// (C)2022 Will Green, Open source hardware released under the MIT License
+// Learn more at https://projectf.io
+
+`default_nettype none
+`timescale 1ns / 1ps
+
+module bram_sdp #(
+    parameter WIDTH=8, 
+    parameter DEPTH=256, 
+    parameter INIT_F="",
+    localparam ADDRW=$clog2(DEPTH)
+    ) (
+    input wire logic clk_write,               // write clock (port a)
+    input wire logic clk_read,                // read clock (port b)
+    input wire logic we,                      // write enable (port a)
+    input wire logic [ADDRW-1:0] addr_write,  // write address (port a)
+    input wire logic [ADDRW-1:0] addr_read,   // read address (port b)
+    input wire logic [WIDTH-1:0] data_in,     // data in (port a)
+    output     logic [WIDTH-1:0] data_out     // data out (port b)
+    );
+
+    (* ram_style = "block", ram_init_file = "memory/david_1bit.mem" *)
+    logic [WIDTH-1:0] memory [DEPTH];
+    // initial memory = '{default: '1};
+    // initial {>>{memory}} = 20000'hab542244000082108420010881224241a8aa1490dd6a009054a12484528004012a4488910204554abadd08250212524120201224a48901410baa0a2465aa8250a0448910090aa90209520232145155495755a009408124a8144044412228848c12aa05aa9aba89120000420281149104554440ab4044ab40a5d6a004a840102814424a4908910a4aa12a029566ad62410221400141292522a128a095d81129205daade3c49100114148448844940422aaa424254fb7bbbde124a044122299529501489455514880156d6bfb3048101148944254200a922289420a092bb6d76e4490014a24a0aaa5494405045250a1022a6dbbdb91240420920514a8940a882a958512092adb55aba450114a4494a55522141280a42848244aadadad850a42111121292a94921425294122105276f540a02004a4544a4a54a92440824a92482084adae94884a2911011552d544909304912884a02976db411210822254aaa55b2a4a2440aa411101446db7242000284922550eed69215005152a484011d6db024a02449254ad7bd24a8a0a1040402282aabdb6905100892522aaaeaa9554a0829210400000d6df450421225555abf554a921140124510141527b6ec829045495556eaa9552aa400548a0000200d6d5b08228892aaadaa55295459128912a408050bbbdc04482936aadb52924aaa82aa32441244105756daa2105555aaaa955556a55551448aa000850dfd5d01402aed2d54aaa25554a89495094810100ad7b5501056dab555554aaa552525508a2280850f7b5d854035b6aaaaaa9555552a4a85215408488ad5dfa8086eeaad5252a95555549028928080011fbe978022bb555b4aaa575569556a85292a20000575df09087d54b5552ad00016928448924800404fdeae2000eaa52aaaa5002a81552921249008881aabe24841d54954aa54a15552a952945540023207fd5881012456aba555068028aaa441092825441eabec008549484eaaa4882488250a945240480a8dff5d4a4922929b54ad424222a95122852515105baaf7012554a52daa9108904a0a2548488820408effad2852892a4b52aa212050d2aa1512514a952baafb008ab5529fa62482a8c8154952452421204f7faea850a9544da8ca0556955552a4a94a4a549beafb000ab5400f55108151295555291410a0822ebfaea000a9001fd4a9020ad6adaa4aa4a452145beafb8d0062081f5544115555b55552514a80889ebfae9000d4551fd52aa256ad6d5555152421522beafba45049409fb5528aaab3abaaaaa95350152fbfaea8a429081f6aa424a94efd55554a4820224dfb7bca4892529fad55492abbaad555555549049f5fef61d22a003ed55412aeeef6b555524a200125f57ad5249240bfabb5555bddadaaaa955548908fbfdfc24924c23ead6e8577777b5aaaaa91100096eb6ada924ab4bf55b575ddddd6d55552aa4402afbfffc02549a53db6dbadb7bb6dab5554a5410086faaad54824d2bf6b6ebb6eef5aaaaaa55490014fefffe09515ad7ed6d5eefdbaeed555552a800296bdb6b21245593f7dbeabb7ef55b5aaaa4900014ff7fff8a4aaaa7eab65fd6ebaeead6aa9aa912a9adf556d090555bff6beabddef5555ad4a5502552ffbfff62a4d997ead55ff7bbadad555554a85555ededb5fc14b67fffb6ad5d76fb6b6aaa954aaa417f7fffb742d8f7fd6857f7eeaaaaad5552a92a96efdb56fdf577dff7dfab5f5ddbb5555555524a54fdffffaf58effffebf56f5fbb6adb5aaaa94a955b77b6dfbf5ffbfbbfbe5df56dd6aad552aa52a90ffdfff6d6f7dffeeeeaab5fdb555556aaaa94aa86df6b5fffdbfff55bbd56eb76bdb6b5555525541ff7fffbb57eebaaa56aaddddad555aaaaa955444eddb6edffeffed55d5576bab7ab6d55aaaaaaaa2fffffbf56dbb755520adbd76d5aaad5555452909bdbddfbffffff2aa0a52ebddad5b55aaaaa94a44efef76eed56dbcac40577db76b556ab6aaa550157f7ffffbfffff55520a5d76d5adb5aaaaaa90148f7eddd5f5badbd555556bddbd6aad6d55552a492ddff77fbfeffed2aaa85f6f6b5b6ad5aaaaa492affdbff6ed7b7bb0552ab6fadad6d6aaad555124a76ffb7fbfdddf6a4aa55defb6ad5adaaaaa54922ffeefddfb7775dea84977baedaab556d5aaa1254ddbbeff6fdddfbe4a956ef75ab6d6b55aaa9454a7fffbd7fdfd7afeb0255baef6d555adaaaaa1493fbf7ffdef5bd7bf45556d7dadadad55556a55514df7db7fbbfebd6eaaabdbeb72ab6b6aaaaa92815ffdffdbff6df7ffd554b55daeb5555ab5556402576fb6fedbff5d7eaaaaadb55aaad6b6ad6a8a849fffffeffed777dfaaab556fb56eb555ab5552112efb7dbb6ffdab775b7ad5556b556dad55555404bfdfeffffbb7bdfeaa812abad56ad56aaad5450087fdffedefffebad541a51575d56ab55aaaaa8952dbfdbbfbef6defd82b7a96d6b5d5aad6daaa6555ff7fefdfbbfb5ea2d555baad6d2d6eaaaaaa882affeffefbffdefb4f5aaab7db556b55b556a89024b7fb7fff6ef6adbdd6d6dab56b5aaaaaaaa320aafdffdbb7fbbf7d5eaab5576edad6dd6ad55442aaff7ffffdbff6d75555aafed5ab5aab56b54a81296fdb7efff77fbd55555555aab6d5b555a592a56affffefdbbfddd6b55556bf7bad6d56daba2a4a8afbfffbfff5ff6ddaa929ead6b5bb5555454a8a55defb7f7eff77db7aa556df6d55556dad5c92a92affbfdfefdfddeeb64d55fadaf76adaab51554855fffffbfbfdff75fdbfff57b5acdb55b56a4a90aaf7eefedfb777db557bddfd6b5baeaaaaa49550a4bdffbffdfffdf6fffef7b7aab5556d554955512aff7ff7ffeedfbabbebbb6d5b6b755b6a92aaa155fff7fdb77ff7eddfbd6edab6d6d6d556549552aaeffdfffffbbefabfebdbb6d55aadb5588aaaa955fbffbfdddffbbd6fbab555adb6d556a552aaa2aa7f6fedfffeefeeded756ad5b555ab56a25555495fffffffb77fefebfad6ad5556daad550aaaaa954dffdffbfffbfb7776ad55b6b5b6b55154aaaaaaafbff7befddfbff5daaadb6daaaad56a252aaa952ff6ffffeffdeedaf56b56aaad555549495555294ffffdefff7ffffd555aaadb6b5aab529555554aabbfdffbb7ef7b6d6b55adb6aad5aa94aaaaaa952fffff7ffdfbdffeaaaab5555aaaad252aaaaaa55ffbf7ffffdfffdb2aad6db555aaa84952aaaa9557feffdb77fef6ffd56ad556d55aa552ad6aaaa24f7ffffffef7bff69555ab5555555a4aab5555555fffdbffffbffbbfe5555adab6d5a2956aad5aa2afdffeeedffb7ffdb5555555aaaa94aaad555554bbfbfffff6ffeeeff95aadb55555252adaaaaaaa0fffffffffefffff6d56d556aaaa4aadab5ad551f;
+
+    initial begin
+        if (INIT_F != "") begin
+            $display("Load init file '%s' into bram_sdp.", INIT_F);
+            $readmemh(INIT_F, memory);
+        end
+    end
+
+    // Port A: Sync Write
+    always_ff @(posedge clk_write) begin
+        if (we) memory[addr_write] <= data_in;
+    end
+
+    // Port B: Sync Read
+    always_ff @(posedge clk_read) begin
+        data_out <= memory[addr_read];
+    end
+endmodule

@@ -8,6 +8,7 @@ LPF         := ../constraints/ulx3s_v20_edited.lpf
 SV_SOURCES  := $(wildcard src/*.sv)
 V_SOURCES   := $(wildcard src/**/*.v) $(wildcard src/*.v)
 V_BLACKBOX  := $(wildcard src/misc/*.sv)
+SV_MEMORY    := $(wildcard src/memory/*.sv)
 HDL_SOURCES := $(SYNTH_V) $(V_SOURCES) $(SV_SOURCES)
 BUILD_DIR   := build
 CLOCKS_DIR  := $(BUILD_DIR)/clocks
@@ -75,10 +76,28 @@ $(info SV_SOURCES = $(SV_SOURCES))
 $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
 	$(YOSYS) -l build/yosys.log \
 		-m slang \
-		-f slang \
-		-p "read_verilog $(CLK_SOURCES) $(V_BLACKBOX) " \
-		-p "read_slang $(SV_SOURCES) " \
-		-p "synth_ecp5 -top $(TOP) -json $(JSON)" 
+		-p "read_verilog $(CLK_SOURCES) " \
+		-p "read -sv $(SV_MEMORY)" \
+		-p "read_slang --ignore-unknown-modules\
+		-I src/ -I src/memory -I build/clocks \
+		--top top \
+		  $(SV_SOURCES) top.sv \
+		--keep-hierarchy " \
+		-p 'synth_ecp5 -json $(JSON)'
+
+# --top top --allow-dup-initial-drivers --allow-use-before-declare --ignore-unknown-modules \
+# -p "read_verilog $(V_BLACKBOX)" \
+# --top top --allow-dup-initial-drivers --allow-use-before-declare --ignore-unknown-modules \
+# --top top -D SYNTHESIS --allow-use-before-declare --ignore-unknown-modules \
+# $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
+# -p "read_slang --ignore-unknown-modules --allow-use-before-declare $(SV_SOURCES) top.sv --top top" \
+# 	$(YOSYS) -l build/yosys.log \
+# 		-m slang \
+# 		-f slang \
+# 		-p "read_verilog $(CLK_SOURCES) $(V_BLACKBOX)" \
+# 		-p "read_verilog -sv $(V_MEMORY)" \
+# 		-p "read_slang --ignore-initial $(SV_SOURCES) " \
+# 		-p "synth_ecp5 -top $(TOP).sv -json $(JSON)"
 		
 # $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
 # 	$(YOSYS) \
