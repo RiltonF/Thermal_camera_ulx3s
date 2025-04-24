@@ -1,9 +1,11 @@
 `default_nettype none
+`timescale 1ns / 1ps
 module top (
     input logic clk_25mhz,
     input logic [6:0] btn,
     output logic [7:0] led,
-    output logic [3:0] gpdi_dp
+    output logic [3:0] gpdi_dp,
+    output logic gp26
 );
     localparam bit p_ddr_mode = 1; //works for both!
     logic s_rst;
@@ -14,6 +16,7 @@ module top (
     assign s_clk_pixel = (p_ddr_mode) ? s_clk_ddr_pixel : s_clk_sdr_pixel;
     assign s_clk_shift = (p_ddr_mode) ? s_clk_ddr : s_clk_sdr;
     assign s_rst = btn[1];
+    assign gp26 = s_clk_pixel;
 
     logic s_hsync;
     logic s_vsync;

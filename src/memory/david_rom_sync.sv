@@ -8,7 +8,8 @@
 module david_rom_sync #(
     parameter WIDTH=1,
     parameter DEPTH=160*120,
-    parameter INIT_F="test_box_mono_160x120.mem",
+    parameter INIT_F="david_1bit.mem",
+    // parameter INIT_F="test_box_mono_160x120.mem",
     localparam ADDRW=$clog2(DEPTH)
     ) (
     input wire logic clk,

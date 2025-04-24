@@ -66,10 +66,11 @@ module framebuffer #(
     logic s_read_valid;
     logic s_draw_valid;
     logic unsigned [9:0] s_shift_cnt;
+    logic unsigned [7:0] s_line_cnt;
 
     assign debug_sig = |s_fb_rd_data;
     assign o_data [0] = (s_draw_valid) ? (|s_fb_rd_data)? '1:'h0 : '0; 
-    assign o_data [1] = (s_draw_valid) ? (|s_fb_rd_data)? '1:'h0 : '0; 
+    assign o_data [1] = (s_draw_valid) ? (|s_fb_rd_data)? '1:'h0 : s_line_cnt; 
     assign o_data [2] = (s_draw_valid) ? (|s_fb_rd_data)? '1:'h0 : 8'hf0; 
     always_ff @(posedge i_clk_pixel) begin
         if (i_rst) begin
@@ -77,6 +78,7 @@ module framebuffer #(
             s_draw_valid <= '0;
             s_fb_rd_addr <= '0;
             s_shift_cnt <= '0;
+            s_line_cnt <= '0;
         end else begin
             s_read_valid <= (i_y_pos >= c_y_start + s_shift_cnt) 
                           & (i_y_pos < c_y_start + c_fb_depth+ s_shift_cnt)
@@ -87,9 +89,11 @@ module framebuffer #(
             //               & (i_x_pos >= 0 - c_mem_latency)
             //               & (i_x_pos < c_fb_width - c_mem_latency);
             s_draw_valid <= s_read_valid;
+            if(i_line) s_line_cnt <= s_line_cnt + 1'b1;
             if (i_frame) begin
                 // s_shift_cnt <= s_shift_cnt + 1'b1;
                 s_fb_rd_addr <= '0;
+            s_line_cnt <= '0;
             end else if(s_read_valid) begin
                 s_fb_rd_addr <= s_fb_rd_addr + 1'b1;
             end

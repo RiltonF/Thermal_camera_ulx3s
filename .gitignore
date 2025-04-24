@@ -5,3 +5,4 @@ src/test/*.out
 src/test/sim*
 src/test/wave*
 src/**/*.old
+src/misc/ecp5
