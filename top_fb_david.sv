@@ -1,6 +1,6 @@
 `default_nettype none
 `timescale 1ns / 1ps
-module top (
+module top_fb_david (
     input logic clk_25mhz,
     input logic [6:0] btn,
     output logic [7:0] led,
@@ -9,13 +9,15 @@ module top (
 );
     localparam bit p_ddr_mode = 1; //works for both!
     logic s_rst;
-    logic s_clk_pixel, s_clk_shift, s_clk_sys;
-    assign s_clk_pixel = s_clk_sys;
+    logic s_clk_pixel, s_clk_shift;
+    logic s_clk_sdr_pixel, s_clk_ddr_pixel;
+    logic s_clk_sdr, s_clk_ddr;
 
-    assign s_rst = ~btn[0]; //ignore the debouce for btn[0]
+    assign s_clk_pixel = (p_ddr_mode) ? s_clk_ddr_pixel : s_clk_sdr_pixel;
+    assign s_clk_shift = (p_ddr_mode) ? s_clk_ddr : s_clk_sdr;
+    assign s_rst = btn[1];
     assign gp26 = s_clk_pixel;
 
-    logic [6:0] s_btn_trig;
     logic s_hsync;
     logic s_vsync;
     logic s_de;
@@ -34,7 +36,7 @@ module top (
       .i_line(s_line),
       .i_x_pos(s_x_pos),
       .i_y_pos(s_y_pos),
-      .debug_sig(),
+      .debug_sig(led[2]),
       .o_data(s_colors)
     );
 
@@ -73,60 +75,24 @@ module top (
     assign gpdi_dp[3] = s_clk_pixel;
 
     assign led[7] = s_clk_pixel;
-    // assign led[6] = s_line;
-    // assign led[5] = s_btn_trig[1];
+    assign led[6] = s_line;
+    assign led[5] = s_frame;
     assign led[4] = s_rst;
-    // assign led[3] = s_vsync;
+    assign led[3] = s_vsync;
     // assign led[2] = s_hsync;
-    // assign led[1] = 0;
 
-    always_ff @(posedge s_clk_sys) begin
-        if (s_rst) begin
-          led[5] <= 1'b0;
-          led[6] <= 1'b0;
-        end else begin
-          if(s_btn_trig[1]) led[6] <= 1'b1;
-          if(btn[1]) led[5] <= 1'b1;
-        end
-    end
+    clk1 inst_clk_gen_sdr (
+      .clkin(clk_25mhz),
+      .clkout0(s_clk_sdr), //250
+      .clkout1(s_clk_sdr_pixel), //25
+      .locked(led[0])
+      );
+    clk2 inst_clk_gen_ddr (
+      .clkin(clk_25mhz),
+      .clkout0(s_clk_ddr), //125
+      .clkout1(s_clk_ddr_pixel), //25
+      .locked(led[1])
+      );
 
-
-    generate
-      for(genvar i = 0; i < $bits(btn); i++) begin : gen_btn_debounce
-        debounce inst_debounce (
-          .i_clk(s_clk_sys),
-          .i_trig(btn[i]),
-          .o_trig(s_btn_trig[i])
-        );
-
-      end
-    endgenerate
-    generate
-      if(p_ddr_mode) begin : gen_ddr_pll
-        clk2 inst_clk_gen_ddr (
-          .clkin(clk_25mhz),
-          .clkout0(s_clk_shift), //125
-          .clkout1(s_clk_sys), //25
-          .locked()
-          );
-      end else begin : gen_sdr_pll
-        clk1 inst_clk_gen_sdr (
-          .clkin(clk_25mhz),
-          .clkout0(s_clk_shift), //250
-          .clkout1(s_clk_sys), //25
-          .locked()
-          );
-      end
-    endgenerate
-
-    demo_switch #(
-      .p_states(4)
-    )inst_demo_switch (
-      .i_clk(s_clk_sys),
-      .i_rst(s_rst),
-      .i_next(s_btn_trig[1]),
-      .i_prev(s_btn_trig[2]),
-      .o_state(led[3:0])
-    );
 
 endmodule

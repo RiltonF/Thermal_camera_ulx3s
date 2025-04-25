@@ -40,7 +40,7 @@ module vga_to_dvi #(
           .o_clk       ()
         );
 
-        if (p_ddr_mode) begin
+        if (p_ddr_mode) begin : gen_ddr_primative
           ODDRX1F inst_ddr_shift (
             .D0(s_shift_bits[0]),
             .D1(s_shift_bits[1]),

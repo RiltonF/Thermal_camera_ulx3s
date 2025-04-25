@@ -5,22 +5,23 @@ DEVICE      := 25
 PACKAGE     := CABGA381
 LPF         := ../constraints/ulx3s_v20_edited.lpf
 # SV_SOURCES  := $(wildcard src/**/*.sv) $(wildcard src/*.sv)
-SV_SOURCES  := $(wildcard src/*.sv)
+SV_SOURCES  := $(wildcard src/*.sv) $(wildcard src/misc/*.sv)
+VHD_SOURCES := $(wildcard src/misc/*.vhd)
 V_SOURCES   := $(wildcard src/**/*.v) $(wildcard src/*.v)
 V_BLACKBOX  := $(wildcard src/misc/*.sv)
 SV_MEMORY    := $(wildcard src/memory/*.sv)
-HDL_SOURCES := $(SYNTH_V) $(V_SOURCES) $(SV_SOURCES)
 BUILD_DIR   := build
 CLOCKS_DIR  := $(BUILD_DIR)/clocks
 
 # ==== Generated files ====
-SYNTH_V    := $(BUILD_DIR)/$(TOP)_synth.v
+SYNTH_V    := $(BUILD_DIR)/vhdl_synth.v
 JSON       := $(BUILD_DIR)/$(TOP).json
 ASC        := $(BUILD_DIR)/$(TOP).asc
 BIT        := $(BUILD_DIR)/$(TOP).bit
 
 # ==== Tools ====
 # using oss-cad so the tools are setup and sourcing them with direnv
+VHDL2VL ?= vhd2vl
 SV2V ?= sv2v 
 YOSYS ?= yosys
 NEXTPNR-ECP5 ?= nextpnr-ecp5
@@ -64,24 +65,25 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 	mkdir -p $(CLOCKS_DIR)
 
-$(SYNTH_V): $(SV_SOURCES) | $(BUILD_DIR)
-	$(SV2V) $(SV_SOURCES) > $(SYNTH_V)
-#	cat $(V_SOURCES) >> $(SYNTH_V)
+# VHDL to VERILOG conversion
+# convert all *.vhd filenames to .v extension
+# VHDL_TO_VERILOG_FILES ?= $(VHD_SOURCES:.vhd=.v)
+# implicit conversion rule
+# %.v: %.vhd
+# 	$(VHDL2VL) $< $@
 
+# HDL_SOURCES := top.sv $(CLK_SOURCES) $(VHDL_TO_VERILOG_FILES) $(V_SOURCES) $(SV_SOURCES)
+HDL_SOURCES := $(TOP).sv $(CLK_SOURCES) $(V_SOURCES) $(SV_SOURCES)
 
-$(info TOP = $(TOP))
-$(info JSON = $(JSON))
-$(info SV_SOURCES = $(SV_SOURCES))
-
-$(JSON): $(SV_SOURCES) | $(BUILD_DIR)
+$(JSON): $(HDL_SOURCES) | $(BUILD_DIR)
 	$(YOSYS) -l build/yosys.log \
 		-m slang \
-		-p "read_verilog $(CLK_SOURCES) " \
+		-p "read_verilog $(CLK_SOURCES)" \
 		-p "read -sv $(SV_MEMORY)" \
-		-p "read_slang --ignore-unknown-modules\
+		-p "read_slang --ignore-unknown-modules \
 		-I src/ -I src/memory -I build/clocks \
-		--top top \
-		  $(SV_SOURCES) top.sv \
+		--top $(TOP) \
+		  $(SV_SOURCES) $(TOP).sv \
 		--keep-hierarchy " \
 		-p 'synth_ecp5 -json $(JSON)'
 
