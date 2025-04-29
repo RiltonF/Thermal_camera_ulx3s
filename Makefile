@@ -3,7 +3,7 @@ TOP        ?= top
 #LFE5U-25F for ULX3S v3.0.3
 DEVICE      := 25
 PACKAGE     := CABGA381
-LPF         := ../constraints/ulx3s_v20_edited.lpf
+LPF         := src/constraints/ulx3s_v20_edited.lpf
 # SV_SOURCES  := $(wildcard src/**/*.sv) $(wildcard src/*.sv)
 SV_SOURCES  := $(wildcard src/*.sv) $(wildcard src/misc/*.sv)
 VHD_SOURCES := $(wildcard src/misc/*.vhd)
@@ -14,7 +14,6 @@ BUILD_DIR   := build
 CLOCKS_DIR  := $(BUILD_DIR)/clocks
 
 # ==== Generated files ====
-SYNTH_V    := $(BUILD_DIR)/vhdl_synth.v
 JSON       := $(BUILD_DIR)/$(TOP).json
 ASC        := $(BUILD_DIR)/$(TOP).asc
 BIT        := $(BUILD_DIR)/$(TOP).bit
@@ -67,46 +66,24 @@ $(BUILD_DIR):
 
 # VHDL to VERILOG conversion
 # convert all *.vhd filenames to .v extension
-# VHDL_TO_VERILOG_FILES ?= $(VHD_SOURCES:.vhd=.v)
+VHDL_TO_VERILOG_FILES ?= $(VHD_SOURCES:.vhd=.v)
 # implicit conversion rule
-# %.v: %.vhd
-# 	$(VHDL2VL) $< $@
+%.v: %.vhd
+	$(VHDL2VL) $< $@
 
-# HDL_SOURCES := top.sv $(CLK_SOURCES) $(VHDL_TO_VERILOG_FILES) $(V_SOURCES) $(SV_SOURCES)
 HDL_SOURCES := $(TOP).sv $(CLK_SOURCES) $(V_SOURCES) $(SV_SOURCES)
 
 $(JSON): $(HDL_SOURCES) | $(BUILD_DIR)
 	$(YOSYS) -l build/yosys.log \
 		-m slang \
-		-p "read_verilog $(CLK_SOURCES)" \
+		-p "read_verilog $(CLK_SOURCES) $(VHDL_TO_VERILOG_FILES)" \
 		-p "read -sv $(SV_MEMORY)" \
-		-p "read_slang --ignore-unknown-modules \
+		-p "read_slang --ignore-unknown-modules\
 		-I src/ -I src/memory -I build/clocks \
 		--top $(TOP) \
 		  $(SV_SOURCES) $(TOP).sv \
 		--keep-hierarchy " \
 		-p 'synth_ecp5 -json $(JSON)'
-
-# --top top --allow-dup-initial-drivers --allow-use-before-declare --ignore-unknown-modules \
-# -p "read_verilog $(V_BLACKBOX)" \
-# --top top --allow-dup-initial-drivers --allow-use-before-declare --ignore-unknown-modules \
-# --top top -D SYNTHESIS --allow-use-before-declare --ignore-unknown-modules \
-# $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
-# -p "read_slang --ignore-unknown-modules --allow-use-before-declare $(SV_SOURCES) top.sv --top top" \
-# 	$(YOSYS) -l build/yosys.log \
-# 		-m slang \
-# 		-f slang \
-# 		-p "read_verilog $(CLK_SOURCES) $(V_BLACKBOX)" \
-# 		-p "read_verilog -sv $(V_MEMORY)" \
-# 		-p "read_slang --ignore-initial $(SV_SOURCES) " \
-# 		-p "synth_ecp5 -top $(TOP).sv -json $(JSON)"
-		
-# $(JSON): $(SV_SOURCES) | $(BUILD_DIR)
-# 	$(YOSYS) \
-# 		-p "plugin -i slang" \
-# 		-p "synth_ecp5 -top $(TOP) -json $(JSON)" \
-# 		-p "read -vlog2k $(CLK_SOURCES)" \
-# 		-p "read -sv $(SV_SOURCES) --top $(TOP)"
 
 $(ASC): $(JSON)
 	$(NEXTPNR-ECP5) \

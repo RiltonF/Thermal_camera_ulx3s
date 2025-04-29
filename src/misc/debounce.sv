@@ -3,7 +3,7 @@
 
 module debounce #(
   parameter int p_async_shift = 3,
-  parameter int p_min_on = 1000
+  parameter p_min_on = 1000000
 ) (
   input  logic i_clk,
   input  logic i_trig,
@@ -15,7 +15,7 @@ module debounce #(
 logic [p_async_shift-1:0] s_in_clocked = '0;
 logic s_state = 1'b0; 
 logic s_trig ;
-logic unsigned [31:0] s_count;
+logic [$clog2(p_min_on)-1:0] s_count;
 
   // Main process
   always_ff @(posedge i_clk) begin

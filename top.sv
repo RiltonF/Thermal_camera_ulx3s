@@ -1,20 +1,79 @@
 `default_nettype none
 `timescale 1ns / 1ps
-module top (
+// verilator lint_off DECLFILENAME
+import package_cam::*; 
+// verilator lint_on DECLFILENAME
+
+module top #(
+    localparam bit p_ddr_mode = 1, //works for both!
+    localparam int p_num_states = 4
+  ) (
     input logic clk_25mhz,
     input logic [6:0] btn,
     output logic [7:0] led,
     output logic [3:0] gpdi_dp,
-    output logic gp26
+
+    inout gp0,gn0, //I2C Pins
+    input gp1,gp2,gp3,gp4,gp5,gp6,
+    input gn1,    gn3,gn4,gn5,gn6,
+    output    gn2, //clock in to cam
+    output gp13,gp12, //cam reset and power
+    //Logic analyzer pins
+    output gp14,gp15,gp16,gp17,gp18,gp19,gp20,
+    output gn14,gn15,gn16,gn17,gn18,gn19,gn20
+    
 );
-    localparam bit p_ddr_mode = 1; //works for both!
-    logic s_rst;
+
     logic s_clk_pixel, s_clk_shift, s_clk_sys;
+    logic s_rst;
+    t_cam_signals s_camera;
     assign s_clk_pixel = s_clk_sys;
-
     assign s_rst = ~btn[0]; //ignore the debouce for btn[0]
-    assign gp26 = s_clk_pixel;
 
+
+    //camera inputs
+    assign s_camera.clk_in = s_clk_pixel; //input
+    // assign s_camera.rst = 1'b1; //reset active low
+    assign s_camera.rst = ~s_rst; //reset active low
+    assign s_camera.power_down = 1'b0;
+    assign gn2 = s_camera.clk_in;
+    assign gp13 = s_camera.rst;
+    assign gp12 = s_camera.power_down;
+
+    //camera outputs
+    assign s_camera.sda = gn0;
+    assign s_camera.scl = gp0;
+    assign s_camera.vsync = gp1;
+    assign s_camera.href = gn1;
+    assign s_camera.clk_pixel = gp2;
+    assign s_camera.data[7] = gp3;
+    assign s_camera.data[5] = gp4;
+    assign s_camera.data[3] = gp5;
+    assign s_camera.data[1] = gp6;
+    assign s_camera.data[6] = gn3;
+    assign s_camera.data[4] = gn4;
+    assign s_camera.data[2] = gn5;
+    assign s_camera.data[0] = gn6;
+
+    assign led[7:1] = s_camera.data[7:1]; //LA OV Data lines
+    assign led[0] = s_camera.href;
+    //Logic analyzer debug
+    assign gp14 = s_camera.sda; //LA i2c
+    assign gn14 = s_camera.scl; //LA i2c
+    assign gp15 = s_camera.vsync;
+    assign gn15 = s_camera.href;
+    assign gn16 = s_camera.clk_pixel;
+    assign gp16 = s_camera.clk_in;
+    assign gp17 = s_camera.data[7]; //LA OV Data lines
+    assign gp18 = s_camera.data[6]; //LA OV Data lines
+    assign gp19 = s_camera.data[5]; //LA OV Data lines
+    assign gp20 = s_camera.data[4]; //LA OV Data lines
+    assign gn17 = s_camera.data[3]; //LA OV Data lines
+    assign gn18 = s_camera.data[2]; //LA OV Data lines
+    assign gn19 = s_camera.data[1]; //LA OV Data lines
+    assign gn20 = s_camera.data[0]; //LA OV Data lines
+
+    logic [p_num_states-1:0] s_demo_state;
     logic [6:0] s_btn_trig;
     logic s_hsync;
     logic s_vsync;
@@ -72,24 +131,15 @@ module top (
     //assign the pixel clock to output
     assign gpdi_dp[3] = s_clk_pixel;
 
-    assign led[7] = s_clk_pixel;
+    // assign led[7] = s_clk_pixel;
     // assign led[6] = s_line;
+    // assign led[6] = 0;
     // assign led[5] = s_btn_trig[1];
-    assign led[4] = s_rst;
+    // assign led[4] = s_rst;
     // assign led[3] = s_vsync;
     // assign led[2] = s_hsync;
     // assign led[1] = 0;
-
-    always_ff @(posedge s_clk_sys) begin
-        if (s_rst) begin
-          led[5] <= 1'b0;
-          led[6] <= 1'b0;
-        end else begin
-          if(s_btn_trig[1]) led[6] <= 1'b1;
-          if(btn[1]) led[5] <= 1'b1;
-        end
-    end
-
+    // assign led[3:0] = s_demo_state;
 
     generate
       for(genvar i = 0; i < $bits(btn); i++) begin : gen_btn_debounce
@@ -120,13 +170,13 @@ module top (
     endgenerate
 
     demo_switch #(
-      .p_states(4)
+      .p_states(p_num_states)
     )inst_demo_switch (
       .i_clk(s_clk_sys),
       .i_rst(s_rst),
       .i_next(s_btn_trig[1]),
       .i_prev(s_btn_trig[2]),
-      .o_state(led[3:0])
+      .o_state(s_demo_state)
     );
 
 endmodule
