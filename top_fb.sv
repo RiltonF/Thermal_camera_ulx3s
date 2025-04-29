@@ -1,7 +1,8 @@
 `default_nettype none
 `timescale 1ns / 1ps
-
-import package_cam::*;
+// verilator lint_off DECLFILENAME
+import package_cam::*; 
+// verilator lint_on DECLFILENAME
 
 module top #(
     localparam bit p_ddr_mode = 1, //works for both!
@@ -19,9 +20,7 @@ module top #(
     output gp13,gp12, //cam reset and power
     //Logic analyzer pins
     output gp14,gp15,gp16,gp17,gp18,gp19,gp20,
-    output gn14,gn15,gn16,gn17,gn18,gn19,gn20,
-
-    output gn27
+    output gn14,gn15,gn16,gn17,gn18,gn19,gn20
     
 );
 
@@ -56,8 +55,8 @@ module top #(
     assign s_camera.data[2] = gn5;
     assign s_camera.data[0] = gn6;
 
-    // assign led[7:1] = s_camera.data[7:1]; //LA OV Data lines
-    // assign led[0] = s_camera.href;
+    assign led[7:1] = s_camera.data[7:1]; //LA OV Data lines
+    assign led[0] = s_camera.href;
     //Logic analyzer debug
     assign gp14 = s_camera.sda; //LA i2c
     assign gn14 = s_camera.scl; //LA i2c
@@ -65,22 +64,14 @@ module top #(
     assign gn15 = s_camera.href;
     assign gn16 = s_camera.clk_pixel;
     assign gp16 = s_camera.clk_in;
-    // assign gp17 = s_camera.data[7]; //LA OV Data lines
-    // assign gp18 = s_camera.data[6]; //LA OV Data lines
-    // assign gp19 = s_camera.data[5]; //LA OV Data lines
-    // assign gp20 = s_camera.data[4]; //LA OV Data lines
-    // assign gn17 = s_camera.data[3]; //LA OV Data lines
-    // assign gn18 = s_camera.data[2]; //LA OV Data lines
-    // assign gn19 = s_camera.data[1]; //LA OV Data lines
-    // assign gn20 = s_camera.data[0]; //LA OV Data lines
-    assign gp17 = led[7]; //LA OV Data lines
-    assign gp18 = led[6]; //LA OV Data lines
-    assign gp19 = led[5]; //LA OV Data lines
-    assign gp20 = led[4]; //LA OV Data lines
-    assign gn17 = led[3]; //LA OV Data lines
-    assign gn18 = led[2]; //LA OV Data lines
-    assign gn19 = led[1]; //LA OV Data lines
-    assign gn20 = led[0]; //LA OV Data lines
+    assign gp17 = s_camera.data[7]; //LA OV Data lines
+    assign gp18 = s_camera.data[6]; //LA OV Data lines
+    assign gp19 = s_camera.data[5]; //LA OV Data lines
+    assign gp20 = s_camera.data[4]; //LA OV Data lines
+    assign gn17 = s_camera.data[3]; //LA OV Data lines
+    assign gn18 = s_camera.data[2]; //LA OV Data lines
+    assign gn19 = s_camera.data[1]; //LA OV Data lines
+    assign gn20 = s_camera.data[0]; //LA OV Data lines
 
     logic [p_num_states-1:0] s_demo_state;
     logic [6:0] s_btn_trig;
@@ -90,58 +81,22 @@ module top #(
     logic s_frame;
     logic s_line;
     logic [7:0] s_colors [3];
-    logic [7:0] s_colors_test [3];
-    logic [7:0] s_colors_cam[3];
+    logic [7:0] s_colors2 [3];
     logic [7:0] s_colors3 [3];
     logic signed [15:0] s_x_pos;
     logic signed [15:0] s_y_pos;
 
-    camera_top #(
-      .p_scaler(2)
-      )inst_camera_top (
-      .i_clk(s_clk_pixel),
-      .i_rst(s_rst),
-      .i_camera(s_camera),
+    framebuffer inst_framebuffer (
+      .i_clk_pixel (s_clk_pixel),
+      .i_rst       (s_rst),
       .i_frame(s_frame),
       .i_line(s_line),
       .i_x_pos(s_x_pos),
       .i_y_pos(s_y_pos),
       .debug_sig(),
-      .led,
       .o_data(s_colors)
     );
 
-    logic [15:0] s_cam_out;
-    logic [7:0] R;
-    logic [7:0] G;
-    logic [7:0] B;
-
-    assign R = { s_cam_out[15:11], 3'b000};
-    assign G = { s_cam_out[10:5], 2'b00};
-    assign B = { s_cam_out[4:0] , 3'b000};
-    logic s_read_valid;
-    logic [9:0] s_wr_row, s_wr_col;
-    camera_read inst_camera_read (
-      .i_clk       (s_clk_pixel),
-      .i_rst       (s_rst),
-      .i_vsync     (s_camera.vsync),
-      .i_href     (s_camera.href),
-      .i_data(s_camera.data),
-      .o_valid(s_read_valid),
-      .o_data(s_cam_out),
-      .o_frame_done(),
-      .o_row(s_wr_row),
-      .o_col(s_wr_col)
-      );
-
-    assign gn27 = s_read_valid;
-    // assign led[7:1] = G; //LA OV Data lines
-    // assign led[0] = s_read_valid;
-    // assign s_colors3[0] = (s_read_valid) ? B : '0;
-    // assign s_colors3[1] = (s_read_valid) ? G : '0;
-    // assign s_colors3[2] = (s_read_valid) ? R : '0;
-    // assign s_colors3[2] = s_colors_test[2];
-    // assign s_colors3[2] = R;
     assign s_colors3[0] = s_colors[0];
     assign s_colors3[1] = s_colors[1];
     assign s_colors3[2] = s_colors[2];
@@ -153,15 +108,13 @@ module top #(
       .o_hsync     (s_hsync),
       .o_vsync     (s_vsync),
       .o_data_en   (s_de),
-      .o_data_test (s_colors_test),
+      .o_data_test (s_colors2),
       .o_frame(s_frame),
       .o_line(s_line),
       .o_x_pos(s_x_pos),
       .o_y_pos(s_y_pos)
     );
 
-    //assign the pixel clock to output
-    assign gpdi_dp[3] = s_clk_pixel;
     vga_to_dvi #(
       .p_ddr_mode (p_ddr_mode)
     ) inst_dvi (
@@ -175,6 +128,8 @@ module top #(
       .o_data_p    (gpdi_dp[2:0])
     );
 
+    //assign the pixel clock to output
+    assign gpdi_dp[3] = s_clk_pixel;
 
     // assign led[7] = s_clk_pixel;
     // assign led[6] = s_line;

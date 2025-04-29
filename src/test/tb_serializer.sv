@@ -64,7 +64,7 @@ module tb_serializer();
 
     task setup(msg="");
     begin
-        rst = 1
+        rst = 1;
         i_data = '0;
         wait_cycles_data(4);
         rst = 0;

@@ -1,7 +1,6 @@
 `default_nettype none
 `timescale 1ns / 1ps
 /* verilator lint_off WIDTHEXPAND */
-
 module camera_read (
     input  logic i_clk,
     input  logic i_rst,
@@ -15,7 +14,7 @@ module camera_read (
     output logic [9:0] o_col
 );
 
-    typedef enum logic[1:0] {WAIT_FRAME_START, ROW_CAPTURE} t_states;
+    typedef enum logic[1:0] {WAIT_FRAME_START=0, ROW_CAPTURE=1} t_states;
     t_states s_state;
 
     logic s_pixel_half;
@@ -32,7 +31,7 @@ module camera_read (
         end else begin
             case (s_state)
                 WAIT_FRAME_START: begin
-                    s_state <= (i_vsync) ? ROW_CAPTURE : WAIT_FRAME_START;
+                    s_state <= t_states'((i_vsync) ? ROW_CAPTURE : WAIT_FRAME_START);
                     o_valid <= '0;
                     o_data <= '0;
                     o_frame_done <= '0;
@@ -41,21 +40,21 @@ module camera_read (
                     s_pixel_half <= '0;
                 end
                 ROW_CAPTURE: begin
-                    s_state <= (i_vsync) ? ROW_CAPTURE : WAIT_FRAME_START;
+                    s_state <= t_states'((i_vsync) ? ROW_CAPTURE : WAIT_FRAME_START);
                     o_valid <= i_href & s_pixel_half;
                     if (i_href) begin
                         s_pixel_half <= ~s_pixel_half;
                         if (~s_pixel_half) begin
-                            o_data[7:0] <= '0; //remove to save power
+                            // o_data[7:0] <= '0; //remove to save power
                             o_data[15:8] <= i_data;
                         end else begin
                             o_data[7:0] <= i_data;
-                            o_row <= o_row + 1;
+                            o_col<= o_col + 1;
                         end
                     end else begin
                         s_pixel_half <= '0; //redundant?
-                        o_row <= '0;
-                        o_col <= (o_row > 0) ? o_col + 1'b1 : o_col;
+                        o_col <= '0;
+                        o_row<= (o_col > 0) ? o_row + 1'b1 : o_row;
                     end
                 end
                 default: s_state <= WAIT_FRAME_START;

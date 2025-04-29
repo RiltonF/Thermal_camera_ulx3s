@@ -17,13 +17,14 @@ module vga_to_dvi #(
       for (genvar i = 0; i < 3; i++) begin : gen_colors_dvi
         logic [9:0] s_encoded;
         logic [1:0] s_shift_bits, s_control_data;
-
+        logic [7:0] s_data;
         assign s_control_data = (i == 2) ? {i_vsync, i_hsync} : 2'b0;
 
+        assign s_data = (i_blank) ? '0 : i_data[i];
         tmds_gen inst_tmds_gen (
           .i_clk(i_clk_pixel),
           .i_rst(i_rst),
-          .i_data(i_data[i]),
+          .i_data(s_data),
           .i_control_data(s_control_data), //only set one or all colors? idk...
           .i_blanking(i_blank),
           .o_encoded(s_encoded)
