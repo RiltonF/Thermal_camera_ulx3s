@@ -106,7 +106,6 @@ module top #(
       .i_line(s_line),
       .i_x_pos(s_x_pos),
       .i_y_pos(s_y_pos),
-      .debug_sig(),
       .led,
       .o_data(s_colors)
     );

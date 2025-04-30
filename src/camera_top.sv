@@ -4,6 +4,7 @@
 import package_cam::*;
 
 module camera_top #(
+    parameter int p_fb_upscale = 2,
     parameter int p_scaler = 1,
     parameter int p_pixel_width  = 640,
     parameter int p_pixel_height = 480,
@@ -17,10 +18,10 @@ module camera_top #(
     localparam int c_fb_dataw = 16,
     localparam int c_fb_addrw = $clog2(c_fb_pixels),
 
-    localparam int c_mem_latency = 1,
-    localparam signed c_x_start = 100,
+    localparam int c_mem_latency = 2,
+    localparam signed c_x_start = 0,
     localparam signed c_x_end = p_pixel_width - 1,
-    localparam signed c_y_start = 100,
+    localparam signed c_y_start = 0,
     localparam signed c_y_end = p_pixel_height - 1
     ) (
     input  logic i_clk,
@@ -30,7 +31,6 @@ module camera_top #(
     input  logic i_line,
     input  logic signed [p_count_width-1:0] i_x_pos,
     input  logic signed [p_count_width-1:0] i_y_pos,
-    output logic debug_sig,
     output [7:0]led,
     output logic [7:0] o_data [3] // RGB data
 );
@@ -45,9 +45,7 @@ module camera_top #(
     logic [9:0] s_wr_row, s_wr_col;
 
     // assign s_fb_wr_addr = {s_wr_col,s_wr_row};
-    // assign s_fb_wr_addr = s_wr_col<<7 + s_wr_col <<5 + s_wr_row;
-    assign s_fb_wr_addr = s_wr_row*160 + s_wr_col;
-    // assign s_fb_wr_addr = s_wr_row<<7 + s_wr_row<<5 + s_wr_col;
+    assign s_fb_wr_addr = (s_wr_row<<7) + (s_wr_row<<5) + s_wr_col - 1;
 
     assign led[7:1] = s_wr_col;
     assign led[0] = s_fb_wr_valid;
@@ -79,16 +77,15 @@ module camera_top #(
     );
 
     logic s_read_valid;
-    logic s_draw_valid;
+    logic [1:0] s_draw_valid;
+    logic [p_fb_upscale-1:0] s_scalex_count;
+    logic [p_fb_upscale-1:0] s_scaley_count;
+    logic [c_fb_addrw-1:0] s_scaley_addr_hold;
 
     assign s_fb_rd_valid = s_read_valid;
-    assign debug_sig = |s_fb_rd_data;
-    assign o_data [2] = (s_draw_valid)? { s_fb_rd_data [15:11], 3'b000}: '0;
-    assign o_data [1] = (s_draw_valid)? { s_fb_rd_data [10:5], 2'b00} : s_line_cnt;
-    assign o_data [0] = (s_draw_valid)? { s_fb_rd_data [4:0] , 3'b000}: i_x_pos;
-    // assign o_data [2] = (s_draw_valid)? '1: '0;
-    // assign o_data [1] = (s_draw_valid)? '1: s_line_cnt;
-    // assign o_data [0] = (s_draw_valid)? '1: i_x_pos;
+    assign o_data [2] = (s_draw_valid[1])? { s_fb_rd_data [15:11], 3'b000}: '0;
+    assign o_data [1] = (s_draw_valid[1])? { s_fb_rd_data [10:5], 2'b00} : s_line_cnt;
+    assign o_data [0] = (s_draw_valid[1])? { s_fb_rd_data [4:0] , 3'b000}: i_x_pos;
 
     always_ff @(posedge i_clk) begin
         if (i_rst) begin
@@ -97,20 +94,40 @@ module camera_top #(
             s_fb_rd_addr <= '0;
             s_line_cnt <= '0;
         end else begin
-            s_read_valid <= (i_y_pos >= c_y_start)
-                          & (i_y_pos < c_y_start + c_fb_height)
+            s_read_valid <= (i_y_pos >= c_y_start )
+                          & (i_y_pos < c_y_start + (c_fb_height << p_fb_upscale))
                           & (i_x_pos >= c_x_start - c_mem_latency)
-                          & (i_x_pos < c_x_start + c_fb_width - c_mem_latency);
-            s_draw_valid <= s_read_valid;
-          if(i_line) begin
+                          & (i_x_pos < c_x_start + (c_fb_width << p_fb_upscale) - c_mem_latency);
+            s_draw_valid <= {s_draw_valid[0], s_read_valid}; //shift register for read valid
+          if (i_frame) begin
+              s_fb_rd_addr <= '0;
+              s_line_cnt <= '0;
+              s_scalex_count <= '0;
+              s_scaley_count <= '0;
+              s_scaley_addr_hold <= '0;
+          end else if(i_line) begin
               s_line_cnt <= s_line_cnt + 1'b1;
+              if(p_fb_upscale > 0) begin
+                  if (s_fb_rd_addr > 0) begin
+                      s_scaley_count <= s_scaley_count + 1;
+                      if(s_scaley_count == 0) begin
+                          s_scaley_addr_hold <= s_fb_rd_addr;
+                      end else begin
+                      // if(~&s_scaley_count) begin
+                          s_fb_rd_addr <= s_scaley_addr_hold;
+                      end
+                  end
+              end
+          end else if(s_read_valid) begin
+              if(p_fb_upscale == 0) begin
+                  s_fb_rd_addr <= s_fb_rd_addr + 1'b1;
+              end else begin
+                  s_scalex_count <= s_scalex_count + 1;
+                  if(&s_scalex_count) begin
+                      s_fb_rd_addr <= s_fb_rd_addr + 1'b1;
+                  end
+              end
           end
-            if (i_frame) begin
-                s_fb_rd_addr <= '0;
-                s_line_cnt <= '0;
-            end else if(s_read_valid) begin
-                s_fb_rd_addr <= s_fb_rd_addr + 1'b1;
-            end
         end
     end
 endmodule

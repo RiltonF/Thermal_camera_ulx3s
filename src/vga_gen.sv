@@ -44,6 +44,7 @@ module vga_gen #(
     localparam signed c_x_end = p_pixel_width - 1;
     localparam signed c_y_start = 0;
     localparam signed c_y_end = p_pixel_height - 1;
+    localparam signed c_control_margin = 10; //something to pre trigger the i_frame/i_line signals so that they arrive before the video enable
 
     typedef struct packed {
         logic signed [p_count_width-1:0] x_counter;
@@ -78,8 +79,8 @@ module vga_gen #(
         s_r_next.vsync = p_vsync_polarity ^ ((s_r.y_counter >= c_vsync_start) & (s_r.y_counter < c_vsync_end));
         s_r_next.data_en = (s_r.x_counter >= c_x_start) & (s_r.y_counter >= c_y_start);
 
-        s_r_next.frame = (s_r.x_counter == c_x_start) & (s_r.y_counter == c_y_start);
-        s_r_next.line = s_r.x_counter == c_x_start;
+        s_r_next.frame = (s_r.x_counter == (c_x_start - c_control_margin)) & (s_r.y_counter == (c_y_start - c_control_margin));
+        s_r_next.line = s_r.x_counter == (c_x_start - c_control_margin);
 
         //output assignments
         o_hsync = s_r.hsync;
