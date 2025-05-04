@@ -113,7 +113,6 @@ module camera_top #(
                       if(s_scaley_count == 0) begin
                           s_scaley_addr_hold <= s_fb_rd_addr;
                       end else begin
-                      // if(~&s_scaley_count) begin
                           s_fb_rd_addr <= s_scaley_addr_hold;
                       end
                   end
