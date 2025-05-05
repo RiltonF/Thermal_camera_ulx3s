@@ -3,6 +3,7 @@
 // Specify the module to load or on files.f
 `include "i2c_bit_gen.sv"
 `timescale 1 ns / 100 ps
+`default_nettype none
 
 module tb_i2c_bit_gen();
 
@@ -19,6 +20,8 @@ module tb_i2c_bit_gen();
     logic       o_ready;
     logic       o_rd_valid;
     logic       o_rd_bit;
+    logic o_sda_drive;
+    logic o_scl_drive;
     wire sda, scl;
     logic s_set_sda;
     logic s_set_scl;
@@ -28,6 +31,9 @@ module tb_i2c_bit_gen();
 
     assign sda = s_set_sda ? 1'bz : 1'b0;
     assign scl = s_set_scl ? 1'bz : 1'b0;
+
+    assign sda = o_sda_drive ? 1'bz : 1'b0;
+    assign scl = o_scl_drive ? 1'bz : 1'b0;
 
     i2c_bit_gen 
     #(
@@ -44,8 +50,10 @@ module tb_i2c_bit_gen();
     .o_ready    (o_ready),
     .o_rd_valid (o_rd_valid),
     .o_rd_bit   (o_rd_bit),
-    .b_sda(sda),
-    .b_scl(scl)
+    .o_sda_drive(o_sda_drive),
+    .o_scl_drive(o_scl_drive),
+    .i_sda(sda),
+    .i_scl(scl)
     );
 
     task automatic wait_cycles(input int n);
