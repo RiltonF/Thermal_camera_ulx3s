@@ -22,9 +22,6 @@ module i2c_bit_gen #(
 
     output logic o_sda_drive,
     output logic o_scl_drive
-
-    // inout  logic b_sda, //bidirectonal
-    // inout  logic b_scl
 );
     localparam int c_tansaction_time = CLK_FREQ / (4 * I2C_FREQ);
 
@@ -87,11 +84,7 @@ module i2c_bit_gen #(
         assign d_timeout_counter = s_r.timeout_counter;
     `endif
 
-    //I2C assignments
-    // assign b_sda = (s_r.sda) ? 1'bz : 1'b0; //required for in/out buffers
-    // assign b_scl = (s_r.scl) ? 1'bz : 1'b0;
-
-    //maks ready if clock is high
+    //mask ready if clock is high
     assign o_ready = (s_r.state == IDLE) & (i_scl != 1'b1);
     assign o_rd_valid = (s_r.state == CLK_DOWN) & ~s_r.write_en;
     assign o_rd_bit = s_r.rd_bit;
@@ -103,7 +96,9 @@ module i2c_bit_gen #(
 
         case (s_r.state)
             IDLE: begin
-                s_r_next.scl = 1'b0;
+                // s_r_next.scl = 1'b0; //not needed? The master controller should prevent this being 1
+                // s_r_next.sda = 1'b1; //causes little glitches if sending multiple zero's,
+                // not really an issue, but creates some unneeded noise
                 //accept request if scl is low
                 if (i_req & o_ready) begin
                     s_r_next.state = BIT_WRITE;
