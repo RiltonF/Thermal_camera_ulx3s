@@ -2,7 +2,7 @@
 `timescale 1ns / 1ps
 /* verilator lint_off WIDTHEXPAND */
 
-module i2c_bit_gen #(
+module i2c_stop_gen #(
     parameter int CLK_FREQ = 25_000_000,
     parameter int I2C_FREQ = 100_000
 ) (
@@ -10,12 +10,7 @@ module i2c_bit_gen #(
     input  logic i_rst,
 
     input  logic i_req,
-    input  logic i_we,
-    input  logic i_wr_bit,
     output logic o_ready,
-
-    output logic o_rd_valid,
-    output logic o_rd_bit,
 
     input  logic i_sda,
     input  logic i_scl,
@@ -27,15 +22,12 @@ module i2c_bit_gen #(
 
     typedef enum {
         IDLE=0, WAIT=1,
-        CLK_UP=2, CLK_DOWN=3,
-        BIT_WRITE=4, BIT_READ=5
+        CLK_UP=2, SDA_DOWN=3,
+        SDA_UP=4
     } t_states;
 
     typedef struct packed {
         t_states state, state_return;
-        logic write_en;
-        logic rd_bit;
-        logic wr_bit;
         logic sda;
         logic scl;
         logic [$clog2(c_tansaction_time)-1:0] timeout_counter;
@@ -59,26 +51,17 @@ module i2c_bit_gen #(
             IDLE,
             1'b1,
             1'b1,
-            1'b0,
-            1'b0,
-            1'b0,
             '0
         };
 
         //Iverilog also flattens structs mapping them directly is required for
         //context
         t_states d_state, d_state_return;
-        logic d_write_en;
-        logic d_rd_bit;
-        logic d_wr_bit;
         logic d_sda;
         logic d_scl;
         logic [$clog2(c_tansaction_time)-1:0] d_timeout_counter;
         assign d_state = s_r.state;
         assign d_state_return= s_r.state_return;
-        assign d_write_en= s_r.write_en;
-        assign d_rd_bit= s_r.rd_bit;
-        assign d_wr_bit= s_r.wr_bit;
         assign d_sda= s_r.sda;
         assign d_scl= s_r.scl;
         assign d_timeout_counter = s_r.timeout_counter;
@@ -86,8 +69,6 @@ module i2c_bit_gen #(
 
     //mask ready if clock is high
     assign o_ready = (s_r.state == IDLE) & (i_scl != 1'b1);
-    assign o_rd_valid = (s_r.state == CLK_DOWN) & ~s_r.write_en;
-    assign o_rd_bit = s_r.rd_bit;
     assign o_sda_drive = s_r.sda;
     assign o_scl_drive = s_r.scl;
 
@@ -96,42 +77,30 @@ module i2c_bit_gen #(
 
         case (s_r.state)
             IDLE: begin
-                // s_r_next.scl = 1'b0; //not needed? The master controller should prevent this being 1
-                // s_r_next.sda = 1'b1; //causes little glitches if sending multiple zero's,
-                // not really an issue, but creates some unneeded noise
                 //accept request if scl is low
                 if (i_req & o_ready) begin
                     s_r_next.scl = 1'b0; //reset the scl to 0
-                    s_r_next.state = BIT_WRITE;
-                    s_r_next.write_en = i_we;
-                    s_r_next.wr_bit = i_wr_bit;
+                    s_r_next.state = SDA_DOWN;
                 end
             end
-            BIT_WRITE: begin
+            SDA_DOWN: begin
                 s_r_next.state = WAIT;
                 s_r_next.state_return = CLK_UP;
                 s_r_next.timeout_counter = c_tansaction_time;
-                //write data if we is enabled, else leave high
-                s_r_next.sda = (s_r.write_en) ? s_r.wr_bit : 1'b1;
+                s_r_next.sda = 1'b0;
             end
             CLK_UP: begin
                 //Stall if the slave is clock stretching
-                s_r_next.state = t_states'((i_scl == 1'b1) ? BIT_READ : WAIT);
+                s_r_next.state = t_states'((i_scl == 1'b1) ? SDA_UP: WAIT);
                 s_r_next.state_return = CLK_UP;
                 s_r_next.timeout_counter = c_tansaction_time;
                 s_r_next.scl = 1'b1;
             end
-            BIT_READ: begin // NOTE: idk if wait is required
-                s_r_next.state = WAIT;
-                s_r_next.state_return = CLK_DOWN;
-                s_r_next.timeout_counter = c_tansaction_time;
-                s_r_next.rd_bit = (s_r.write_en) ? 1'b0 : i_sda;
-            end
-            CLK_DOWN: begin
+            SDA_UP: begin
                 s_r_next.state = WAIT;
                 s_r_next.state_return = IDLE;
                 s_r_next.timeout_counter = c_tansaction_time;
-                s_r_next.scl = 1'b0;
+                s_r_next.sda = 1'b1;
             end
             WAIT: begin
                 if (s_r.timeout_counter == '0) begin
