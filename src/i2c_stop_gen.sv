@@ -10,10 +10,7 @@ module i2c_stop_gen #(
     input  logic i_rst,
 
     input  logic i_req,
-<<<<<<< HEAD
-=======
     output logic o_done,
->>>>>>> 3f13974 (Added I2C stop gen and tests)
     output logic o_ready,
 
     input  logic i_sda,
@@ -27,11 +24,7 @@ module i2c_stop_gen #(
     typedef enum {
         IDLE=0, WAIT=1,
         CLK_UP=2, SDA_DOWN=3,
-<<<<<<< HEAD
-        SDA_UP=4
-=======
         SDA_UP=4, DONE=5
->>>>>>> 3f13974 (Added I2C stop gen and tests)
     } t_states;
 
     typedef struct packed {
@@ -77,10 +70,7 @@ module i2c_stop_gen #(
 
     //mask ready if clock is high
     assign o_ready = (s_r.state == IDLE) & (i_scl != 1'b1);
-<<<<<<< HEAD
-=======
     assign o_done = (s_r.state == DONE);
->>>>>>> 3f13974 (Added I2C stop gen and tests)
     assign o_sda_drive = s_r.sda;
     assign o_scl_drive = s_r.scl;
 
@@ -110,12 +100,6 @@ module i2c_stop_gen #(
             end
             SDA_UP: begin
                 s_r_next.state = WAIT;
-<<<<<<< HEAD
-                s_r_next.state_return = IDLE;
-                s_r_next.timeout_counter = c_tansaction_time;
-                s_r_next.sda = 1'b1;
-            end
-=======
                 s_r_next.state_return = DONE;
                 s_r_next.timeout_counter = c_tansaction_time;
                 s_r_next.sda = 1'b1;
@@ -123,7 +107,6 @@ module i2c_stop_gen #(
             DONE: begin
                 s_r_next.state = IDLE;
             end
->>>>>>> 3f13974 (Added I2C stop gen and tests)
             WAIT: begin
                 if (s_r.timeout_counter == '0) begin
                     s_r_next.state = s_r.state_return;

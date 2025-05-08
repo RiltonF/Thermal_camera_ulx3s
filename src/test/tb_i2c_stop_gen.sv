@@ -15,10 +15,7 @@ module tb_i2c_stop_gen();
     logic rst=1;
     logic i_req;
     logic o_ready;
-<<<<<<< HEAD
-=======
     logic o_done;
->>>>>>> 3f13974 (Added I2C stop gen and tests)
     logic o_sda_drive;
     logic o_scl_drive;
     wire sda, scl;
@@ -45,10 +42,7 @@ module tb_i2c_stop_gen();
     .i_rst       (rst),
     .i_req       (i_req),
     .o_ready     (o_ready),
-<<<<<<< HEAD
-=======
     .o_done      (o_done),
->>>>>>> 3f13974 (Added I2C stop gen and tests)
     .i_sda       (sda),
     .i_scl       (scl),
     .o_sda_drive (o_sda_drive),
@@ -105,11 +99,8 @@ module tb_i2c_stop_gen();
         s_set_scl = 1;//release clock for dut to take over
         s_set_sda = 1;
         wait_cycles(1);
-<<<<<<< HEAD
         wait(dut.s_r.state == 0);
-=======
         wait(o_done);
->>>>>>> 3f13974 (Added I2C stop gen and tests)
         `ASSERT(sda == 1)
         `ASSERT(scl == 1)
         wait_cycles(4);
@@ -127,11 +118,8 @@ module tb_i2c_stop_gen();
         wait(~o_ready);
         s_set_scl = 1;//release clock for dut to take over
         wait_cycles(1);
-<<<<<<< HEAD
         wait(dut.s_r.state == 0);
-=======
         wait(o_done);
->>>>>>> 3f13974 (Added I2C stop gen and tests)
         `ASSERT(sda == 1)
         `ASSERT(scl == 1)
         wait_cycles(4);
@@ -150,10 +138,7 @@ module tb_i2c_stop_gen();
             wait_cycles(1);
             `ASSERT(dut.s_r.state == 0)
             `ASSERT(o_ready == 0)
-<<<<<<< HEAD
-=======
             `ASSERT(o_done == 0)
->>>>>>> 3f13974 (Added I2C stop gen and tests)
         end
         wait_cycles(4);
     end
