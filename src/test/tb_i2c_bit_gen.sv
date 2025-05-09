@@ -44,6 +44,7 @@ module tb_i2c_bit_gen();
     (
     .i_clk      (clk),
     .i_rst      (rst),
+    .i_enable   (1'b1), //this will be tested later in the arbitration phase
     .i_req      (i_req),
     .i_we       (i_we),
     .i_wr_bit   (i_wr_bit),

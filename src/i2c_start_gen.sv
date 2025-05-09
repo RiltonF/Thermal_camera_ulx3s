@@ -88,7 +88,6 @@ module i2c_start_gen #(
                     //follow the current state of the line for smooth transition.
                     s_r_next.sda = i_sda;
                     s_r_next.scl = i_scl;
-                    //accept request if scl is low
                     // NOTE: Add delay WAIT state below if sda rises too quickly
                     if (i_req & o_ready) begin
                         //if scl is high, drop the clock because sda is also high.

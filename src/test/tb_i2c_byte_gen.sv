@@ -82,6 +82,7 @@ module tb_i2c_byte_gen();
     (
     .i_clk      (clk),
     .i_rst      (rst),
+    .i_enable   (1'b1),
     .i_req      (o_req_bit),
     .i_we       (o_we_bit),
     .i_wr_bit   (o_wr_bit),

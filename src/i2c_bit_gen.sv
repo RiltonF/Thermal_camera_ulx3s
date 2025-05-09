@@ -9,6 +9,8 @@ module i2c_bit_gen #(
     input  logic i_clk,
     input  logic i_rst,
 
+    input  logic i_enable,
+
     input  logic i_req,
     input  logic i_we,
     input  logic i_wr_bit,
@@ -96,15 +98,16 @@ module i2c_bit_gen #(
 
         case (s_r.state)
             IDLE: begin
-                // s_r_next.scl = 1'b0; //not needed? The master controller should prevent this being 1
-                // s_r_next.sda = 1'b1; //causes little glitches if sending multiple zero's,
-                // not really an issue, but creates some unneeded noise
-                //accept request if scl is low
-                if (i_req & o_ready) begin
-                    s_r_next.scl = 1'b0; //reset the scl to 0
-                    s_r_next.state = BIT_WRITE;
-                    s_r_next.write_en = i_we;
-                    s_r_next.wr_bit = i_wr_bit;
+                if(i_enable) begin
+                    //follow the current state of the line for smooth transition.
+                    s_r_next.sda = i_sda;
+                    s_r_next.scl = i_scl;
+                    //accept request if scl is low
+                    if (i_req & o_ready) begin
+                        s_r_next.state = BIT_WRITE;
+                        s_r_next.write_en = i_we;
+                        s_r_next.wr_bit = i_wr_bit;
+                    end
                 end
             end
             BIT_WRITE: begin

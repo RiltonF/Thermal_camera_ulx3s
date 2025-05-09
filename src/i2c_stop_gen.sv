@@ -9,6 +9,8 @@ module i2c_stop_gen #(
     input  logic i_clk,
     input  logic i_rst,
 
+    input  logic i_enable,
+
     input  logic i_req,
     output logic o_done,
     output logic o_ready,
@@ -79,10 +81,15 @@ module i2c_stop_gen #(
 
         case (s_r.state)
             IDLE: begin
-                //accept request if scl is low
-                if (i_req & o_ready) begin
-                    s_r_next.scl = 1'b0; //reset the scl to 0
-                    s_r_next.state = SDA_DOWN;
+                if(i_enable) begin
+                    //follow the current state of the line for smooth transition.
+                    s_r_next.sda = i_sda;
+                    s_r_next.scl = i_scl;
+                    //accept request if scl is low
+                    if (i_req & o_ready) begin
+                        s_r_next.scl = 1'b0; //reset the scl to 0
+                        s_r_next.state = SDA_DOWN;
+                    end
                 end
             end
             SDA_DOWN: begin

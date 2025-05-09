@@ -41,6 +41,7 @@ module tb_i2c_stop_gen();
     .i_clk       (clk),
     .i_rst       (rst),
     .i_req       (i_req),
+    .i_enable    (1'b1), //this will be tested later in the arbitration phase
     .o_ready     (o_ready),
     .o_done      (o_done),
     .i_sda       (sda),
