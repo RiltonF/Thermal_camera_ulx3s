@@ -123,8 +123,94 @@ module tb_i2c_req_manager();
 
     `TEST_SUITE("TESTSUITE_NAME")
 
-    `UNIT_TEST("Byte write multiple SCCB")
+    `UNIT_TEST("Repeat start")
         #1ns;
+        wait_cycles(4);
+        i_enable = 1;
+        i_we = 0;
+        i_sccb_mode = 0;
+        i_addr_slave = 'hff;
+        i_addr_reg = 'h0f;
+        i_burst_num = 0;
+        i_wr_byte = 'hcd;
+        i_valid_wr_byte = 1;
+
+        i_start_ready = 1;
+        i_stop_ready = 1;
+        i_byte_ready = 1;
+        wait_cycles(4);
+
+        fork
+            begin
+                repeat (3) begin
+                    i_valid = 1;
+                    wait(~o_ready);
+                    wait_cycles(1);
+                    // i_valid = 0;
+                    i_we = ~i_we;
+                    wait(o_ready);
+                    wait_cycles(1);
+                end
+                    i_valid = 0;
+            end
+            begin
+                repeat (4) begin
+                    //START
+                    wait(o_req_valid);
+                    `ASSERT(o_active_gen == START)
+                    wait_cycles(4);
+                    i_start_stop_done = 1;
+                    wait_cycles(1);
+                    i_start_stop_done = 0;
+
+                    //BYTE
+                    //2+data bursts
+                    for(int i = 0;i<3;i++) begin
+                        wait(o_req_valid);
+                        `ASSERT(o_active_gen == BYTE)
+                        if(i == 0) begin
+                            `ASSERT(o_wr_byte == {i_addr_slave, ~dut.s_r.write_en})
+                        end else if(i == 1) begin
+                            `ASSERT(o_wr_byte == i_addr_reg)
+                        end else if(o_req_we) begin
+                            `ASSERT(o_wr_byte == i_wr_byte)
+                        end
+
+                        if (i < 2 | dut.s_r.write_en) begin
+                            wait_cycles(4);
+                            i_wr_ack = 1;
+                            wait_cycles(1);
+                            i_wr_ack = 0;
+                        end
+                        else begin
+                            wait_cycles(4);
+                            i_rd_valid = 1;
+                            wait_cycles(1);
+                            i_rd_valid = 0;
+                        end
+                    end
+                end
+                wait(o_req_valid);
+                `ASSERT(o_active_gen == STOP)
+                wait_cycles(4);
+                i_start_stop_done = 1;
+                wait_cycles(1);
+                i_start_stop_done = 0;
+            end
+            begin
+                repeat (2) begin
+                    wait(o_ready_wr_byte);
+                    wait_cycles(1);
+                    i_wr_byte = ~i_wr_byte;
+                    wait_cycles(1);
+                end
+                i_valid_wr_byte = 0;
+            end
+        join
+
+    `UNIT_TEST_END
+
+    `UNIT_TEST("Byte write multiple SCCB")
         wait_cycles(4);
         i_enable = 1;
         i_we = 1;
@@ -165,9 +251,13 @@ module tb_i2c_req_manager();
                 for(int i = 0;i<3;i++) begin
                     wait(o_req_valid);
                     `ASSERT(o_active_gen == BYTE)
-                    if(i == 0) `ASSERT(o_wr_byte == {i_addr_slave, ~i_we})
-                    else if(i == 1) `ASSERT(o_wr_byte == i_addr_reg)
-                    else `ASSERT(o_wr_byte == i_wr_byte)
+                    if(i == 0) begin
+                        `ASSERT(o_wr_byte == {i_addr_slave, ~i_we})
+                    end else if(i == 1) begin
+                        `ASSERT(o_wr_byte == i_addr_reg)
+                    end else begin
+                        `ASSERT(o_wr_byte == i_wr_byte)
+                    end
                     if (i < 2 | i_we) begin
                         wait_cycles(4);
                         i_wr_ack = 1;
@@ -180,6 +270,8 @@ module tb_i2c_req_manager();
                         i_rd_valid = 0;
                     end
                 end
+
+                //STOP
                 wait(o_req_valid);
                 `ASSERT(o_active_gen == STOP)
                 wait_cycles(4);
@@ -200,15 +292,15 @@ module tb_i2c_req_manager();
     `UNIT_TEST_END
 
 
-    `UNIT_TEST("Byte write multiple 2")
+    `UNIT_TEST("Byte read multiple")
         #1ns;
         wait_cycles(4);
         i_enable = 1;
-        i_we = 1;
+        i_we = 0;
         i_sccb_mode = 0;
         i_addr_slave = 'hff;
         i_addr_reg = 'h0f;
-        i_burst_num = 7; //this should be ignored in sccb mode
+        i_burst_num = 5;
         i_wr_byte = 'hcd;
         i_valid_wr_byte = 1;
 
@@ -227,15 +319,90 @@ module tb_i2c_req_manager();
                 `ASSERT(o_active_gen == START)
                 wait_cycles(4);
                 i_start_stop_done = 1;
+                wait_cycles(1);
+                i_start_stop_done = 0;
 
                 //BYTE
-                //2+data bursts
-                for(int i = 0;i<9;i++) begin
+                //2+1+data bursts
+                for(int i = 0;i<8;i++) begin
                     wait(o_req_valid);
                     `ASSERT(o_active_gen == BYTE)
-                    if(i == 0) `ASSERT(o_wr_byte == {i_addr_slave, ~i_we})
-                    else if(i == 1) `ASSERT(o_wr_byte == i_addr_reg)
-                    else `ASSERT(o_wr_byte == i_wr_byte)
+                    if(i == 0) begin
+                        `ASSERT(o_wr_byte == {i_addr_slave, ~i_we})
+                    end else if(i == 1) begin
+                        `ASSERT(o_wr_byte == i_addr_reg)
+                    end else if (i_we)begin
+                        `ASSERT(o_wr_byte == i_wr_byte)
+                    end
+                    if (i < 2 | i_we) begin
+                        wait_cycles(4);
+                        i_wr_ack = 1;
+                        wait_cycles(1);
+                        i_wr_ack = 0;
+                    end else begin
+                        wait_cycles(4);
+                        i_rd_valid = 1;
+                        wait_cycles(1);
+                        i_rd_valid = 0;
+                    end
+                end
+                wait(o_req_valid);
+                `ASSERT(o_active_gen == STOP)
+                wait_cycles(4);
+                i_start_stop_done = 1;
+                wait_cycles(1);
+                i_start_stop_done = 0;
+                wait_cycles(4);
+                `ASSERT(o_ready == 1)
+                wait_cycles(6);
+            end
+        join
+
+    `UNIT_TEST_END
+
+
+    `UNIT_TEST("Byte write multiple 2")
+        #1ns;
+        wait_cycles(4);
+        i_enable = 1;
+        i_we = 1;
+        i_sccb_mode = 0;
+        i_addr_slave = 'hff;
+        i_addr_reg = 'h0f;
+        i_burst_num = 7;
+        i_wr_byte = 'hcd;
+        i_valid_wr_byte = 1;
+
+        i_start_ready = 1;
+        i_stop_ready = 1;
+        i_byte_ready = 1;
+        wait_cycles(4);
+
+        fork
+            begin
+                //START
+                i_valid = 1;
+                wait(~o_ready);
+                i_valid = 0;
+                wait(o_req_valid);
+                `ASSERT(o_active_gen == START)
+                wait_cycles(4);
+                i_start_stop_done = 1;
+                wait_cycles(1);
+                i_start_stop_done = 0;
+
+                //BYTE
+                //2+1+data bursts
+                for(int i = 0;i<10;i++) begin
+                    wait(o_req_valid);
+                    `ASSERT(o_active_gen == BYTE)
+                    if(i == 0) begin
+                        `ASSERT(o_wr_byte == {i_addr_slave, ~i_we})
+                    end else if(i == 1) begin
+                        `ASSERT(o_wr_byte == i_addr_reg)
+                    end else begin
+                        `ASSERT(o_wr_byte == i_wr_byte)
+                    end
                     if (i < 2 | i_we) begin
                         wait_cycles(4);
                         i_wr_ack = 1;
@@ -292,7 +459,7 @@ module tb_i2c_req_manager();
         i_start_stop_done = 1;
         wait_cycles(1);
         i_start_stop_done = 0;
-        repeat (6) begin
+        repeat (7) begin
             i_byte_ready = 1;
             wait(o_req_valid);
             `ASSERT(o_active_gen == BYTE)

@@ -143,7 +143,6 @@ module i2c_req_manager #(
                 s_r_next.active_gen = NONE;
             end
             REQ_LOAD: begin
-                s_r_next.active_gen = NONE;
                 //Load all the requred data for the request
                 if (i_valid & o_ready) begin
                     s_r_next.state = REQ_CONTROL;
@@ -156,6 +155,8 @@ module i2c_req_manager #(
                     s_r_next.byte_counter = '0;
                     s_r_next.last_byte = '0;
                     s_r_next.active_gen_next = START;
+                end else begin
+                    s_r_next.state = REQ_LOAD;
                 end
             end
             REQ_CONTROL: begin
@@ -173,7 +174,7 @@ module i2c_req_manager #(
                         case(s_r.byte_counter)
                             //Write the slave addr
                             'd0: begin
-                                s_r_next.req_byte = {s_r.addr_slave, ~i_we}; // Read=1, Write=0
+                                s_r_next.req_byte = {s_r.addr_slave, ~s_r.write_en}; // Read=1, Write=0
                             end
                             //Write the register address, (surrently only 8 bit support)
                             'd1: begin
@@ -255,8 +256,13 @@ module i2c_req_manager #(
                                 end else begin
                                     if (s_r.last_byte) begin
                                         //decide to repeat start or stop req
-                                        s_r_next.active_gen_next =
-                                            t_gen_states'((i_valid) ? START : STOP);
+                                        if (i_valid) begin
+                                            s_r_next.active_gen_next = START;
+                                            s_r_next.state = REQ_LOAD;
+                                        end else begin
+                                            s_r_next.active_gen_next = STOP;
+                                            s_r_next.state = REQ_CONTROL;
+                                        end
                                     end
                                 end
                             end
