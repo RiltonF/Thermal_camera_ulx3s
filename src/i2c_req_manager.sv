@@ -27,6 +27,9 @@ module i2c_req_manager #(
     input  logic [7:0] i_wr_byte,
     output logic o_ready_wr_byte,
 
+    //From RD Byte FIFO
+    input logic i_ready_rd_byte,
+
     //Output to byte_gen module
     output logic [7:0] o_wr_byte,
 
@@ -37,10 +40,11 @@ module i2c_req_manager #(
     input logic i_rd_valid,
 
     //Input OR-reduced from start/stop gen
-    input logic i_start_stop_done,
     input logic i_start_ready,
+    input logic i_start_done,
 
     input logic i_stop_ready,
+    input logic i_stop_done,
 
     //[None=0,Start=1,Byte=2,Stop=3]
     output t_gen_states o_active_gen,
@@ -85,7 +89,7 @@ module i2c_req_manager #(
     `else
         //Iverilog doesn't support the construct above ^
         //It throws a synthax error
-        localparam t_control c_control_reset = '{ 
+        localparam t_control c_control_reset = '{
             IDLE, NONE, NONE, '0, '0, '0, '0, '0, '0, '0, '0, '0};
 
         //Iverilog also flattens structs, mapping them directly is required for
@@ -182,8 +186,10 @@ module i2c_req_manager #(
                             end
                             //Reads or writes
                             default: begin
-                                s_r_next.state =
-                                    t_states'((i_valid_wr_byte | ~s_r.write_en) ? INIT_GEN : REQ_CONTROL);
+                                s_r_next.state = t_states'(
+                                    ((i_valid_wr_byte & s_r.write_en)
+                                    |(i_ready_rd_byte & ~s_r.write_en))
+                                    ? INIT_GEN : REQ_CONTROL);
                                 s_r_next.req_byte = (s_r.write_en) ? i_wr_byte : '0;
                                 s_r_next.last_byte = s_r.byte_counter >= (s_r.burst_num + 'd2);
                             end
@@ -220,11 +226,14 @@ module i2c_req_manager #(
             WAIT_GEN: begin
                 logic v_done;
                 case(s_r.active_gen)
-                    START, STOP: begin
-                        v_done = i_start_stop_done;
+                    START: begin
+                        v_done = i_start_done;
                     end
                     BYTE: begin
                         v_done = i_wr_ack | i_wr_nack | i_rd_valid;
+                    end
+                    STOP: begin
+                        v_done = i_stop_done;
                     end
                     default: v_done = 1'b0;
                 endcase
@@ -232,10 +241,6 @@ module i2c_req_manager #(
                     s_r_next.state = END_GEN;
                     s_r_next.wr_ack = i_wr_ack;
                 end
-                // if (i_start_stop_done | i_wr_ack | i_wr_nack | i_rd_valid) begin
-                //     s_r_next.state = END_GEN;
-                //     s_r_next.wr_ack = i_wr_ack;
-                // end
             end
             END_GEN: begin
                 s_r_next.state = REQ_CONTROL;
