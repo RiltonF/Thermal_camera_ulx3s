@@ -131,7 +131,7 @@ module i2c_req_manager #(
     assign o_req_last_byte = s_r.last_byte;
     //first two bytes are writes, slave addr and reg addr
     assign o_req_we =
-        (s_r.byte_counter >= 2) ? s_r.write_en : 1'b1;
+        (s_r.byte_counter >= 3) ? s_r.write_en : 1'b1;
     //pop the read data
     assign o_ready_wr_byte = (s_r.state == REQ_GEN)
                            & (s_r.byte_counter >= 'd2)
@@ -155,7 +155,8 @@ module i2c_req_manager #(
                     s_r_next.addr_slave = i_addr_slave;
                     s_r_next.addr_reg = i_addr_reg;
                     s_r_next.wr_ack = '0;
-                    s_r_next.burst_num = i_burst_num;
+                    //Set to 0 if in sscb mode, no bursts allowed
+                    s_r_next.burst_num = (i_sccb_mode) ? '0 : i_burst_num;
                     s_r_next.byte_counter = '0;
                     s_r_next.last_byte = '0;
                     s_r_next.active_gen_next = START;
@@ -178,7 +179,7 @@ module i2c_req_manager #(
                         case(s_r.byte_counter)
                             //Write the slave addr
                             'd0: begin
-                                s_r_next.req_byte = {s_r.addr_slave, ~s_r.write_en}; // Read=1, Write=0
+                                s_r_next.req_byte = {s_r.addr_slave, 1'b0}; //We're writing the slave addr
                             end
                             //Write the register address, (surrently only 8 bit support)
                             'd1: begin
@@ -186,12 +187,21 @@ module i2c_req_manager #(
                             end
                             //Reads or writes
                             default: begin
-                                s_r_next.state = t_states'(
-                                    ((i_valid_wr_byte & s_r.write_en)
-                                    |(i_ready_rd_byte & ~s_r.write_en))
-                                    ? INIT_GEN : REQ_CONTROL);
-                                s_r_next.req_byte = (s_r.write_en) ? i_wr_byte : '0;
-                                s_r_next.last_byte = s_r.byte_counter >= (s_r.burst_num + 'd2);
+                                if (s_r.write_en) begin
+                                    //Wait for wr valid
+                                    s_r_next.state = t_states'((i_valid_wr_byte) ? INIT_GEN : REQ_CONTROL);
+                                    s_r_next.req_byte = i_wr_byte;
+                                    s_r_next.last_byte = s_r.byte_counter >= (s_r.burst_num + 'd2);
+                                end else begin
+                                    //Wait for rd ready
+                                    s_r_next.state = t_states'((i_ready_rd_byte) ? INIT_GEN : REQ_CONTROL);
+                                    s_r_next.last_byte = s_r.byte_counter >= (s_r.burst_num + 'd2 + 'd1);
+                                    if (s_r.byte_counter == 'd2) begin
+                                        s_r_next.req_byte = {s_r.addr_slave, 1'b1}; // Reading mode on bus
+                                    end else begin
+                                        s_r_next.req_byte = '0; 
+                                    end
+                                end
                             end
                         endcase
                     end
@@ -246,30 +256,57 @@ module i2c_req_manager #(
                 s_r_next.state = REQ_CONTROL;
                 case (s_r.active_gen)
                     START: s_r_next.active_gen_next = BYTE;
-                    STOP: s_r_next.active_gen_next = NONE;
+                    STOP: begin
+                        s_r_next.active_gen_next =
+                            t_gen_states'((s_r.last_byte) ? NONE : START);
+                    end
                     BYTE: begin
                         s_r_next.byte_counter++; //increment byte counter after req
                         case (s_r.byte_counter)
-                            'd0, 'd1: begin //Slave addr byte and Reg addr byte
+                            'd0: begin //Slave addr byte
                                 //Slave should ack back, even in sccb mode
                                 s_r_next.active_gen_next =
                                     t_gen_states'((s_r.wr_ack) ? BYTE : STOP);
                             end
-                            default: begin //Data bytes
-                                if (s_r.sccb_mode) begin //No bursts allowed
-                                    s_r_next.active_gen_next = STOP;
-                                end else begin
-                                    if (s_r.last_byte) begin
-                                        //decide to repeat start or stop req
-                                        if (i_valid) begin
-                                            s_r_next.active_gen_next = START;
-                                            s_r_next.state = REQ_LOAD;
-                                        end else begin
-                                            s_r_next.active_gen_next = STOP;
-                                            s_r_next.state = REQ_CONTROL;
-                                        end
+                            'd1: begin //Reg addr byte
+                                //Slave should ack back, even in sccb mode
+                                if (s_r.wr_ack) begin
+                                    if (s_r.write_en) begin
+                                        s_r_next.active_gen_next = BYTE;
+                                    end else begin
+                                        s_r_next.active_gen_next =
+                                            t_gen_states'((s_r.sccb_mode) ? STOP : START);
                                     end
+                                end else begin
+                                    s_r_next.active_gen_next = STOP;
                                 end
+                            end
+                            default: begin //Data bytes
+                                if (s_r.last_byte) begin
+                                    //decide to repeat start or stop req
+                                    if (~s_r.sccb_mode & i_valid) begin
+                                        s_r_next.active_gen_next = START;
+                                        s_r_next.state = REQ_LOAD;
+                                    end else begin
+                                        //No bursts for sccb mode
+                                        s_r_next.active_gen_next = STOP;
+                                    end
+                                end else begin
+                                end
+                                // if (s_r.sccb_mode) begin //No bursts allowed
+                                //     s_r_next.active_gen_next = STOP;
+                                // end else begin
+                                //     if (s_r.last_byte) begin
+                                //         //decide to repeat start or stop req
+                                //         if (i_valid) begin
+                                //             s_r_next.active_gen_next = START;
+                                //             s_r_next.state = REQ_LOAD;
+                                //         end else begin
+                                //             s_r_next.active_gen_next = STOP;
+                                //             s_r_next.state = REQ_CONTROL;
+                                //         end
+                                //     end
+                                // end
                             end
                         endcase
                     end

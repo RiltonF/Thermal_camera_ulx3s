@@ -138,6 +138,59 @@ module tb_i2c_master();
         wait_cycles(4);
         i_enable = 1;
         i_we = 0;
+        i_sccb_mode = 1;
+        i_addr_slave = 'h0;
+        i_addr_reg = 'h0f;
+        i_burst_num = 0;
+        i_wr_fifo_data = 'hcd;
+        i_wr_fifo_valid = 1;
+        i_rd_fifo_ready = 1;
+        fork
+            begin
+                repeat (4) begin
+                    i_valid = 1;
+                    `WAIT(~o_ready);
+                    wait_cycles(1);
+                    // i_valid = 0;
+                    i_we = ~i_we;
+                    `WAIT(o_ready);
+                    wait_cycles(1);
+                end
+                    i_valid = 0;
+                    wait_cycles(8);
+                    `WAIT(o_ready);
+                    wait_cycles(40);
+            end
+            begin
+                repeat (3*4) begin
+                    `WAIT(
+                        (dut.inst_i2c_byte_gen.s_r.bit_counter == 8) &
+                        (dut.inst_i2c_bit_gen.i_req));
+                    s_set_sda = ~dut.inst_i2c_bit_gen.i_we;
+                    wait_cycles(c_tansaction_time*5);
+                    s_set_sda = 1;
+                    wait_cycles(1);
+                end
+            end
+            begin
+                repeat (2) begin
+                    `WAIT(o_wr_fifo_ready);
+                    wait_cycles(1);
+                    i_wr_fifo_data = ~i_wr_fifo_data;
+                    wait_cycles(1);
+                end
+                i_wr_fifo_valid = 0;
+            end
+        join
+
+    `UNIT_TEST_END
+
+
+    `UNIT_TEST("TESTCASE_NAME")
+        #1ns;
+        wait_cycles(4);
+        i_enable = 1;
+        i_we = 0;
         i_sccb_mode = 0;
         i_addr_slave = 'hff;
         i_addr_reg = 'h0f;
