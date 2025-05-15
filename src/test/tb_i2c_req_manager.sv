@@ -79,6 +79,19 @@ module tb_i2c_req_manager();
         repeat (n) @(posedge clk);
     endtask
 
+    `define WAIT(condition) \
+        fork \
+            begin \
+                wait(condition); \
+            end \
+            begin \
+                wait_cycles(5000); \
+                `ERROR($sformatf("Timed out waiting for condition: '%s' at time %0t", condition, $time)) \
+                $finish; \
+            end \
+        join_any \
+        disable fork; \
+
     //Clocks
     always #(5ns) clk= ~clk; // verilator lint_off STMTDLY
 
@@ -127,6 +140,8 @@ module tb_i2c_req_manager();
     end
     endtask
 
+    // TODO: FIX broken read tests after chang to read mode
+
     `TEST_SUITE("TESTSUITE_NAME")
 
     `UNIT_TEST("Repeat start")
@@ -150,11 +165,11 @@ module tb_i2c_req_manager();
             begin
                 repeat (3) begin
                     i_valid = 1;
-                    wait(~o_ready);
+                    `WAIT(~o_ready);
                     wait_cycles(1);
                     // i_valid = 0;
                     i_we = ~i_we;
-                    wait(o_ready);
+                    `WAIT(o_ready);
                     wait_cycles(1);
                 end
                     i_valid = 0;
@@ -162,7 +177,7 @@ module tb_i2c_req_manager();
             begin
                 repeat (4) begin
                     //START
-                    wait(o_req_valid);
+                    `WAIT(o_req_valid);
                     `ASSERT(o_active_gen == START)
                     wait_cycles(4);
                     i_start_done = 1;
@@ -172,10 +187,10 @@ module tb_i2c_req_manager();
                     //BYTE
                     //2+data bursts
                     for(int i = 0;i<3;i++) begin
-                        wait(o_req_valid);
+                        `WAIT(o_req_valid);
                         `ASSERT(o_active_gen == BYTE)
                         if(i == 0) begin
-                            `ASSERT(o_wr_byte == {i_addr_slave, ~dut.s_r.write_en})
+                            `ASSERT(o_wr_byte == {i_addr_slave, 1'b0})
                         end else if(i == 1) begin
                             `ASSERT(o_wr_byte == i_addr_reg)
                         end else if(o_req_we) begin
@@ -196,7 +211,7 @@ module tb_i2c_req_manager();
                         end
                     end
                 end
-                wait(o_req_valid);
+                `WAIT(o_req_valid);
                 `ASSERT(o_active_gen == STOP)
                 wait_cycles(4);
                 i_stop_done = 1;
@@ -205,7 +220,7 @@ module tb_i2c_req_manager();
             end
             begin
                 repeat (2) begin
-                    wait(o_ready_wr_byte);
+                    `WAIT(o_ready_wr_byte);
                     wait_cycles(1);
                     i_wr_byte = ~i_wr_byte;
                     wait_cycles(1);
@@ -236,16 +251,16 @@ module tb_i2c_req_manager();
             begin
                 repeat (4) begin
                     i_valid = 1;
-                    wait(~o_ready);
+                    `WAIT(~o_ready);
                     wait_cycles(1);
                     i_valid = 0;
-                    wait(o_ready);
+                    `WAIT(o_ready);
                     wait_cycles(1);
                 end
             end
             repeat (4) begin
                 //START
-                wait(o_req_valid);
+                `WAIT(o_req_valid);
                 `ASSERT(o_active_gen == START)
                 wait_cycles(4);
                 i_start_done = 1;
@@ -255,10 +270,10 @@ module tb_i2c_req_manager();
                 //BYTE
                 //2+data bursts
                 for(int i = 0;i<3;i++) begin
-                    wait(o_req_valid);
+                    `WAIT(o_req_valid);
                     `ASSERT(o_active_gen == BYTE)
                     if(i == 0) begin
-                        `ASSERT(o_wr_byte == {i_addr_slave, ~i_we})
+                        `ASSERT(o_wr_byte == {i_addr_slave, 1'b0})
                     end else if(i == 1) begin
                         `ASSERT(o_wr_byte == i_addr_reg)
                     end else begin
@@ -278,7 +293,7 @@ module tb_i2c_req_manager();
                 end
 
                 //STOP
-                wait(o_req_valid);
+                `WAIT(o_req_valid);
                 `ASSERT(o_active_gen == STOP)
                 wait_cycles(4);
                 i_stop_done = 1;
@@ -287,7 +302,7 @@ module tb_i2c_req_manager();
             end
             begin
                 repeat (4) begin
-                    wait(o_ready_wr_byte);
+                    `WAIT(o_ready_wr_byte);
                     wait_cycles(1);
                     i_wr_byte = ~i_wr_byte;
                     wait_cycles(1);
@@ -319,9 +334,9 @@ module tb_i2c_req_manager();
             begin
                 //START
                 i_valid = 1;
-                wait(~o_ready);
+                `WAIT(~o_ready);
                 i_valid = 0;
-                wait(o_req_valid);
+                `WAIT(o_req_valid);
                 `ASSERT(o_active_gen == START)
                 wait_cycles(4);
                 i_start_done = 1;
@@ -331,10 +346,10 @@ module tb_i2c_req_manager();
                 //BYTE
                 //2+1+data bursts
                 for(int i = 0;i<8;i++) begin
-                    wait(o_req_valid);
+                    `WAIT(o_req_valid);
                     `ASSERT(o_active_gen == BYTE)
                     if(i == 0) begin
-                        `ASSERT(o_wr_byte == {i_addr_slave, ~i_we})
+                        `ASSERT(o_wr_byte == {i_addr_slave, 1'b0})
                     end else if(i == 1) begin
                         `ASSERT(o_wr_byte == i_addr_reg)
                     end else if (i_we)begin
@@ -352,7 +367,7 @@ module tb_i2c_req_manager();
                         i_rd_valid = 0;
                     end
                 end
-                wait(o_req_valid);
+                `WAIT(o_req_valid);
                 `ASSERT(o_active_gen == STOP)
                 wait_cycles(4);
                 i_stop_done = 1;
@@ -388,9 +403,9 @@ module tb_i2c_req_manager();
             begin
                 //START
                 i_valid = 1;
-                wait(~o_ready);
+                `WAIT(~o_ready);
                 i_valid = 0;
-                wait(o_req_valid);
+                `WAIT(o_req_valid);
                 `ASSERT(o_active_gen == START)
                 wait_cycles(4);
                 i_start_done = 1;
@@ -400,10 +415,10 @@ module tb_i2c_req_manager();
                 //BYTE
                 //2+1+data bursts
                 for(int i = 0;i<10;i++) begin
-                    wait(o_req_valid);
+                    `WAIT(o_req_valid);
                     `ASSERT(o_active_gen == BYTE)
                     if(i == 0) begin
-                        `ASSERT(o_wr_byte == {i_addr_slave, ~i_we})
+                        `ASSERT(o_wr_byte == {i_addr_slave, 1'b0})
                     end else if(i == 1) begin
                         `ASSERT(o_wr_byte == i_addr_reg)
                     end else begin
@@ -421,7 +436,7 @@ module tb_i2c_req_manager();
                         i_rd_valid = 0;
                     end
                 end
-                wait(o_req_valid);
+                `WAIT(o_req_valid);
                 `ASSERT(o_active_gen == STOP)
                 wait_cycles(4);
                 i_stop_done = 1;
@@ -433,7 +448,7 @@ module tb_i2c_req_manager();
             end
             begin
                 repeat (7) begin
-                    wait(o_ready_wr_byte);
+                    `WAIT(o_ready_wr_byte);
                     wait_cycles(1);
                     i_wr_byte = ~i_wr_byte;
                     wait_cycles(1);
@@ -459,7 +474,7 @@ module tb_i2c_req_manager();
         i_start_ready = 1;
         wait_cycles(1);
         i_valid = 0;
-        wait(o_req_valid);
+        `WAIT(o_req_valid);
         `ASSERT(o_active_gen == START)
         wait_cycles(4);
         i_start_done = 1;
@@ -467,7 +482,7 @@ module tb_i2c_req_manager();
         i_start_done = 0;
         repeat (7) begin
             i_byte_ready = 1;
-            wait(o_req_valid);
+            `WAIT(o_req_valid);
             `ASSERT(o_active_gen == BYTE)
             i_wr_byte = ~i_wr_byte;
             wait_cycles(4);
@@ -476,7 +491,7 @@ module tb_i2c_req_manager();
             i_wr_ack = 0;
         end
         i_stop_ready = 1;
-        wait(o_req_valid);
+        `WAIT(o_req_valid);
         `ASSERT(o_active_gen == STOP)
         wait_cycles(4);
         i_stop_done = 1;
@@ -504,7 +519,7 @@ module tb_i2c_req_manager();
         i_start_ready = 1;
         wait_cycles(1);
         i_valid = 0;
-        wait(o_req_valid);
+        `WAIT(o_req_valid);
         `ASSERT(o_active_gen == START)
         wait_cycles(4);
         i_start_done = 1;
@@ -512,21 +527,21 @@ module tb_i2c_req_manager();
         i_start_done = 0;
         repeat (3) begin
             i_byte_ready = 1;
-            wait(o_req_valid);
+            `WAIT(o_req_valid);
             `ASSERT(o_active_gen == BYTE)
             wait_cycles(4);
             i_wr_ack = 1;
             wait_cycles(1);
             i_wr_ack = 0;
         end
-        // wait(o_req_valid);
+        // `WAIT(o_req_valid);
         // `ASSERT(o_active_gen == BYTE)
         // wait_cycles(4);
         // i_rd_valid = 1;
         // wait_cycles(1);
         // i_rd_valid = 0;
         i_stop_ready = 1;
-        wait(o_req_valid);
+        `WAIT(o_req_valid);
         `ASSERT(o_active_gen == STOP)
         wait_cycles(4);
         i_stop_done = 1;
@@ -552,7 +567,7 @@ module tb_i2c_req_manager();
         i_start_ready = 1;
         wait_cycles(1);
         i_valid = 0;
-        wait(o_req_valid);
+        `WAIT(o_req_valid);
         `ASSERT(o_active_gen == START)
         wait_cycles(4);
         i_start_done = 1;
@@ -560,7 +575,7 @@ module tb_i2c_req_manager();
         i_start_done = 0;
         repeat (2) begin
             i_byte_ready = 1;
-            wait(o_req_valid);
+            `WAIT(o_req_valid);
             `ASSERT(o_active_gen == BYTE)
             wait_cycles(4);
             i_wr_ack = 1;
@@ -568,7 +583,7 @@ module tb_i2c_req_manager();
             i_wr_ack = 0;
         end
         repeat (4) begin
-            wait(o_req_valid);
+            `WAIT(o_req_valid);
             `ASSERT(o_active_gen == BYTE)
             wait_cycles(4);
             i_rd_valid = 1;
@@ -576,7 +591,7 @@ module tb_i2c_req_manager();
             i_rd_valid = 0;
         end
         i_stop_ready = 1;
-        wait(o_req_valid);
+        `WAIT(o_req_valid);
         `ASSERT(o_active_gen == STOP)
         wait_cycles(4);
         i_stop_done = 1;
@@ -602,7 +617,7 @@ module tb_i2c_req_manager();
         i_start_ready = 1;
         wait_cycles(1);
         i_valid = 0;
-        wait(o_req_valid);
+        `WAIT(o_req_valid);
         `ASSERT(o_active_gen == START)
         wait_cycles(4);
         i_start_done = 1;
@@ -610,21 +625,21 @@ module tb_i2c_req_manager();
         i_start_done = 0;
         repeat (2) begin
             i_byte_ready = 1;
-            wait(o_req_valid);
+            `WAIT(o_req_valid);
             `ASSERT(o_active_gen == BYTE)
             wait_cycles(4);
             i_wr_ack = 1;
             wait_cycles(1);
             i_wr_ack = 0;
         end
-        wait(o_req_valid);
+        `WAIT(o_req_valid);
         `ASSERT(o_active_gen == BYTE)
         wait_cycles(4);
         i_rd_valid = 1;
         wait_cycles(1);
         i_rd_valid = 0;
         i_stop_ready = 1;
-        wait(o_req_valid);
+        `WAIT(o_req_valid);
         `ASSERT(o_active_gen == STOP)
         wait_cycles(4);
         i_stop_done = 1;

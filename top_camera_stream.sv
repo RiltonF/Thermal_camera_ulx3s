@@ -2,7 +2,6 @@
 `timescale 1ns / 1ps
 
 import package_cam::*;
-import package_i2c::*;
 
 module top #(
     localparam bit p_ddr_mode = 1, //works for both!
@@ -25,42 +24,14 @@ module top #(
     output gn27
     
 );
+
     logic s_clk_pixel, s_clk_shift, s_clk_sys;
     logic s_rst;
-    logic [6:0] s_btn_trig;
     t_cam_signals s_camera;
     assign s_clk_pixel = s_clk_sys;
     assign s_rst = ~btn[0]; //ignore the debouce for btn[0]
 
-    t_i2c_cmd o_data;
-    assign o_data = 
-      '{we:s_btn_trig[4]|s_btn_trig[6], sccb_mode:1, addr_slave:'h21, addr_reg:'h1E, burst_num:'d0}; 
 
-    i2c_master_wrapper inst_i2c_master_wrapper (
-      .i_clk(s_clk_sys),
-      .i_rst(s_rst),
-      .i_enable(1'b1),
-
-      .i_cmd_fifo_valid(s_btn_trig[3]|s_btn_trig[4]|s_btn_trig[6]),
-      .i_cmd_fifo_data(o_data),
-      .o_cmd_fifo_ready(),
-
-      .i_wr_fifo_valid(s_btn_trig[4]|s_btn_trig[6]),
-      .i_wr_fifo_data((s_btn_trig[6]) ? 8'b10111: 8'b111),
-      .o_wr_fifo_ready(),
-
-      .o_rd_fifo_valid(),
-      .o_rd_fifo_data(led),
-      .i_rd_fifo_ready(s_btn_trig[3]),
-
-      .b_sda(gn0),
-      .b_scl(gp0)
-      // .b_sda(s_camera.sda),
-      // .b_scl(s_camera.scl)
-    );
-
-
-    //CAMERA -------------------------------------------------------
     //camera inputs
     assign s_camera.clk_in = s_clk_pixel; //input
     // assign s_camera.rst = 1'b1; //reset active low
@@ -94,24 +65,25 @@ module top #(
     assign gn15 = s_camera.href;
     assign gn16 = s_camera.clk_pixel;
     assign gp16 = s_camera.clk_in;
-    assign gp17 = s_camera.data[7]; //LA OV Data lines
-    assign gp18 = s_camera.data[6]; //LA OV Data lines
-    assign gp19 = s_camera.data[5]; //LA OV Data lines
-    assign gp20 = s_camera.data[4]; //LA OV Data lines
-    assign gn17 = s_camera.data[3]; //LA OV Data lines
-    assign gn18 = s_camera.data[2]; //LA OV Data lines
-    assign gn19 = s_camera.data[1]; //LA OV Data lines
-    assign gn20 = s_camera.data[0]; //LA OV Data lines
-    // assign gp17 = led[7]; //LA OV Data lines
-    // assign gp18 = led[6]; //LA OV Data lines
-    // assign gp19 = led[5]; //LA OV Data lines
-    // assign gp20 = led[4]; //LA OV Data lines
-    // assign gn17 = led[3]; //LA OV Data lines
-    // assign gn18 = led[2]; //LA OV Data lines
-    // assign gn19 = led[1]; //LA OV Data lines
-    // assign gn20 = led[0]; //LA OV Data lines
+    // assign gp17 = s_camera.data[7]; //LA OV Data lines
+    // assign gp18 = s_camera.data[6]; //LA OV Data lines
+    // assign gp19 = s_camera.data[5]; //LA OV Data lines
+    // assign gp20 = s_camera.data[4]; //LA OV Data lines
+    // assign gn17 = s_camera.data[3]; //LA OV Data lines
+    // assign gn18 = s_camera.data[2]; //LA OV Data lines
+    // assign gn19 = s_camera.data[1]; //LA OV Data lines
+    // assign gn20 = s_camera.data[0]; //LA OV Data lines
+    assign gp17 = led[7]; //LA OV Data lines
+    assign gp18 = led[6]; //LA OV Data lines
+    assign gp19 = led[5]; //LA OV Data lines
+    assign gp20 = led[4]; //LA OV Data lines
+    assign gn17 = led[3]; //LA OV Data lines
+    assign gn18 = led[2]; //LA OV Data lines
+    assign gn19 = led[1]; //LA OV Data lines
+    assign gn20 = led[0]; //LA OV Data lines
 
     logic [p_num_states-1:0] s_demo_state;
+    logic [6:0] s_btn_trig;
     logic s_hsync;
     logic s_vsync;
     logic s_de;
@@ -134,7 +106,7 @@ module top #(
       .i_line(s_line),
       .i_x_pos(s_x_pos),
       .i_y_pos(s_y_pos),
-      .led(),
+      .led,
       .o_data(s_colors)
     );
 
