@@ -167,6 +167,7 @@ module top #(
       .i_x_pos(s_x_pos),
       .i_y_pos(s_y_pos),
       .led(),
+      .i_toggle(s_btn_trig[3]),
       .o_data(s_colors)
     );
 

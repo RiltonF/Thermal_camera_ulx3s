@@ -31,6 +31,7 @@ module camera_top #(
     input  logic i_line,
     input  logic signed [p_count_width-1:0] i_x_pos,
     input  logic signed [p_count_width-1:0] i_y_pos,
+    input logic i_toggle,
     output [7:0]led,
     output logic [7:0] o_data [3] // RGB data
 );
@@ -49,6 +50,17 @@ module camera_top #(
 
     assign led[7:1] = s_wr_col;
     assign led[0] = s_fb_wr_valid;
+
+    logic [7:0] s_gray_data;
+    rgb565_to_grayscale inst_grayscale (
+        .i_clk       (i_clk),
+        .i_rst       (i_rst),
+        .i_rgb       (s_fb_rd_data),
+        // .o_gray_rgb  (s_wr_gray_data)
+        .o_gray(s_gray_data)
+    );
+
+
     dc_dp_ram #(
         .WIDTH(c_fb_dataw),
         .DEPTH(c_fb_pixels)
@@ -57,7 +69,7 @@ module camera_top #(
         .i_clk_wr(i_camera.clk_pixel),
         .i_wr_valid(s_fb_wr_valid),
         .i_wr_addr(s_fb_wr_addr),
-        .i_wr_data(s_fb_wr_data),
+        .i_wr_data((s_fb_wr_addr == 160) ? '1: s_fb_wr_data),
         .i_rd_req(s_fb_rd_valid),
         .i_rd_addr(s_fb_rd_addr),
         .o_rd_data(s_fb_rd_data)
@@ -77,15 +89,31 @@ module camera_top #(
     );
 
     logic s_read_valid;
-    logic [1:0] s_draw_valid;
+    logic [2:0] s_draw_valid;
     logic [p_fb_upscale-1:0] s_scalex_count;
     logic [p_fb_upscale-1:0] s_scaley_count;
     logic [c_fb_addrw-1:0] s_scaley_addr_hold;
+    logic s_switch;
+    wire [7:0] r_grey = { s_gray_data [7:3], 3'b000};
+    wire [7:0] g_grey = { s_gray_data [7:2], 2'b000};
+    wire [7:0] b_grey = { s_gray_data [7:3], 3'b000};
+    wire [7:0] r_color = { s_fb_rd_data [15:11], 3'b000};
+    wire [7:0] g_color = { s_fb_rd_data [10:5], 2'b000};
+    wire [7:0] b_color = { s_fb_rd_data [4:0], 3'b000};
+
 
     assign s_fb_rd_valid = s_read_valid;
-    assign o_data [2] = (s_draw_valid[1])? { s_fb_rd_data [15:11], 3'b000}: '0;
-    assign o_data [1] = (s_draw_valid[1])? { s_fb_rd_data [10:5], 2'b00} : s_line_cnt;
-    assign o_data [0] = (s_draw_valid[1])? { s_fb_rd_data [4:0] , 3'b000}: i_x_pos;
+    always_comb begin
+        if(s_switch) begin
+            o_data [2] = (s_draw_valid[1])? r_grey: '0;
+            o_data [1] = (s_draw_valid[1])? g_grey: s_line_cnt;
+            o_data [0] = (s_draw_valid[1])? b_grey: i_x_pos;
+        end else begin
+            o_data [2] = (s_draw_valid[1])? r_color: '0;
+            o_data [1] = (s_draw_valid[1])? g_color: s_line_cnt;
+            o_data [0] = (s_draw_valid[1])? b_color: i_x_pos;
+        end
+    end
 
     always_ff @(posedge i_clk) begin
         if (i_rst) begin
@@ -93,12 +121,14 @@ module camera_top #(
             s_draw_valid <= '0;
             s_fb_rd_addr <= '0;
             s_line_cnt <= '0;
+            s_switch <= '0;
         end else begin
+            if (i_toggle) s_switch <= ~s_switch;
             s_read_valid <= (i_y_pos >= c_y_start )
                           & (i_y_pos < c_y_start + (c_fb_height << p_fb_upscale))
                           & (i_x_pos >= c_x_start - c_mem_latency)
                           & (i_x_pos < c_x_start + (c_fb_width << p_fb_upscale) - c_mem_latency);
-            s_draw_valid <= {s_draw_valid[0], s_read_valid}; //shift register for read valid
+            s_draw_valid <= {s_draw_valid[1:0], s_read_valid}; //shift register for read valid
           if (i_frame) begin
               s_fb_rd_addr <= '0;
               s_line_cnt <= '0;
