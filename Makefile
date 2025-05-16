@@ -102,12 +102,16 @@ clocks: $(CLK_SOURCES)
 upload: $(BIT)
 	$(OPENFPGALOADER) --board ulx3s $(BIT)
 
+flash: $(BIT)
+	$(OPENFPGALOADER) --board ulx3s --file-type bin -f $(BIT)
+
 # ==== Cleanup ====
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all al clean cl upload up clocks
+.PHONY: all al clean cl upload up clocks flash fl
 
 al: all
 cl: clean
 up: upload
+fl: flash

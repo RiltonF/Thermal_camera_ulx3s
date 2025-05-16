@@ -37,6 +37,7 @@ module i2c_rom_cmd_parser #(
         logic [p_rom_addr_width-1:0] addr;
         logic done;
         logic [15:0] rom_data;
+        logic init;
     } t_signals;
 
 
@@ -82,7 +83,7 @@ module i2c_rom_cmd_parser #(
         s_r_next = s_r;
         case(s_r.state)
             IDLE: begin
-                if (i_start) begin
+                if (i_start | ~s_r.init) begin
                     s_r_next.addr = '0;
                     s_r_next.state = CMD_LOAD;
                     s_r_next.done = 1'b0;
@@ -94,6 +95,7 @@ module i2c_rom_cmd_parser #(
                         s_r_next.state = IDLE;
                         s_r_next.done = 1'b1;
                         s_r_next.addr = '0;
+                        s_r_next.init = 1'b1;
                     end
                     16'hFFF0: begin
                         s_r_next.state = DELAY;

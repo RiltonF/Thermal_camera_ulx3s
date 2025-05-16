@@ -22,7 +22,7 @@ module top #(
     output gp14,gp15,gp16,gp17,gp18,gp19,gp20,
     output gn14,gn15,gn16,gn17,gn18,gn19,gn20,
 
-    output gn27
+    output gn27,gp27
     
 );
     logic s_clk_pixel, s_clk_shift, s_clk_sys;
@@ -32,26 +32,58 @@ module top #(
     assign s_clk_pixel = s_clk_sys;
     assign s_rst = ~btn[0]; //ignore the debouce for btn[0]
 
-    t_i2c_cmd o_data;
-    assign o_data = 
-      '{we:s_btn_trig[4]|s_btn_trig[6], sccb_mode:1, addr_slave:'h21, addr_reg:'h1E, burst_num:'d0}; 
+    // t_i2c_cmd o_data;
+    // assign o_data = 
+    //   '{we:s_btn_trig[4]|s_btn_trig[6], sccb_mode:1, addr_slave:'h21, addr_reg:'h1E, burst_num:'d0}; 
 
-    i2c_master_wrapper inst_i2c_master_wrapper (
+    assign gn27 = s_btn_trig[4];
+    assign gp27 = btn[4];
+
+    logic s_cmd_valid, s_cmd_ready;
+    t_i2c_cmd s_cmd_data;
+    logic [7:0] s_wr_data;
+    logic [7:0] s_rom_addr;
+    logic [15:0] s_rom_data;
+    i2c_rom_cmd_parser #(
+      .p_sccb_mode      (1),
+      .p_slave_addr     ('h21),
+      .p_wr_mode        (1),
+      .p_rom_addr_width (8)
+    ) inst_i2c_rom_cmd_parser (
+      .i_clk       (s_clk_sys),
+      .i_rst       (s_rst),
+      .i_start     (s_btn_trig[4]),
+      .o_addr      (s_rom_addr),
+      .i_data      (s_rom_data),
+      .o_done      (led[0]),
+      .o_cmd_valid (s_cmd_valid),
+      .o_cmd_data  (s_cmd_data),
+      .o_wr_data   (s_wr_data),
+      .i_cmd_ready (s_cmd_ready)
+    );
+
+    ov7670_rom_sync inst_ov7670_config_rom (
+      .clk (s_clk_sys),
+      .addr(s_rom_addr),
+      .data(s_rom_data)
+    );
+
+    i2c_master_wrapper #(.CMD_FIFO(0)) inst_i2c_master_wrapper (
       .i_clk(s_clk_sys),
       .i_rst(s_rst),
       .i_enable(1'b1),
 
-      .i_cmd_fifo_valid(s_btn_trig[3]|s_btn_trig[4]|s_btn_trig[6]),
-      .i_cmd_fifo_data(o_data),
-      .o_cmd_fifo_ready(),
+      .i_cmd_fifo_valid(s_cmd_valid),
+      .i_cmd_fifo_data(s_cmd_data),
+      .o_cmd_fifo_ready(s_cmd_ready),
 
-      .i_wr_fifo_valid(s_btn_trig[4]|s_btn_trig[6]),
-      .i_wr_fifo_data((s_btn_trig[6]) ? 8'b10111: 8'b111),
+      .i_wr_fifo_valid(s_cmd_valid),
+      .i_wr_fifo_data(s_wr_data),
       .o_wr_fifo_ready(),
 
       .o_rd_fifo_valid(),
-      .o_rd_fifo_data(led),
-      .i_rd_fifo_ready(s_btn_trig[3]),
+      .o_rd_fifo_data(led[7:1]),
+      .i_rd_fifo_ready(),
 
       .b_sda(gn0),
       .b_scl(gp0)
@@ -161,7 +193,7 @@ module top #(
       .o_col(s_wr_col)
       );
 
-    assign gn27 = s_read_valid;
+    // assign gn27 = s_read_valid;
     // assign led[7:1] = G; //LA OV Data lines
     // assign led[0] = s_read_valid;
     // assign s_colors3[0] = (s_read_valid) ? B : '0;
