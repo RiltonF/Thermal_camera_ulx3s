@@ -69,7 +69,7 @@ module i2c_rom_cmd_parser #(
         assign d_done = s_r.done;
         assign d_rom_data = s_r.rom_data;
         localparam t_signals c_signals_reset = 
-            '{IDLE,'0,'0,'0,'0};
+            '{IDLE,'0,'0,'0,'0,'0};
         assign o_cmd_data = '{
             p_wr_mode,
             p_sccb_mode,
