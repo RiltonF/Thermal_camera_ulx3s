@@ -3,6 +3,7 @@ build/
 session_*
 src/test/*.out
 src/test/sim*
+src/test/*.fst
 src/test/wave*
 src/**/*.old
 src/misc/ecp5

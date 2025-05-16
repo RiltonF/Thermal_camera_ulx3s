@@ -1,0 +1,64 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Fri May 16 18:07:16 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_i2c_rom_cmd_parser.fst"
+[dumpfile_mtime] "Fri May 16 15:36:20 2025"
+[dumpfile_size] 3619
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_i2c_rom_cmd_parser.gtkw"
+[timestart] 0
+[size] 2560 1358
+[pos] -1 -1
+*-15.625683 280800 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_i2c_rom_cmd_parser.
+[sst_width] 274
+[signals_width] 279
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@28
+tb_i2c_rom_cmd_parser.dut.p_wr_mode
+tb_i2c_rom_cmd_parser.dut.p_sccb_mode
+@420
+tb_i2c_rom_cmd_parser.dut.p_delay_const
+tb_i2c_rom_cmd_parser.dut.p_rom_addr_width
+@22
+tb_i2c_rom_cmd_parser.dut.p_slave_addr
+@28
+tb_i2c_rom_cmd_parser.inst_rom.i_clk
+@22
+tb_i2c_rom_cmd_parser.inst_rom.i_addr[7:0]
+tb_i2c_rom_cmd_parser.inst_rom.o_data[15:0]
+@200
+-
+@420
+tb_i2c_rom_cmd_parser.dut.c_signals_reset
+@22
+tb_i2c_rom_cmd_parser.dut.d_addr[7:0]
+@28
+tb_i2c_rom_cmd_parser.dut.d_done
+@22
+tb_i2c_rom_cmd_parser.dut.d_rom_data[15:0]
+@25
+tb_i2c_rom_cmd_parser.dut.d_state[31:0]
+@200
+-
+@28
+tb_i2c_rom_cmd_parser.dut.i_clk
+tb_i2c_rom_cmd_parser.dut.i_rst
+tb_i2c_rom_cmd_parser.dut.i_start
+tb_i2c_rom_cmd_parser.dut.i_cmd_ready
+@22
+tb_i2c_rom_cmd_parser.dut.o_addr[7:0]
+tb_i2c_rom_cmd_parser.dut.i_data[15:0]
+@28
+tb_i2c_rom_cmd_parser.dut.o_done
+@200
+-
+@22
+tb_i2c_rom_cmd_parser.dut.o_cmd_data[20:0]
+@28
+tb_i2c_rom_cmd_parser.dut.o_cmd_valid
+@22
+tb_i2c_rom_cmd_parser.dut.o_wr_data[7:0]
+[pattern_trace] 1
+[pattern_trace] 0
