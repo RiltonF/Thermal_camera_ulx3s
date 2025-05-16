@@ -3,7 +3,11 @@
 /* verilator lint_off WIDTHEXPAND */
 import package_i2c::*;
 
-module i2c_master_wrapper (
+module i2c_master_wrapper #(
+    parameter bit CMD_FIFO = 1'b1,
+    parameter bit WR_FIFO = 1'b1,
+    parameter bit RD_FIFO = 1'b1
+)(
     input  logic i_clk,
     input  logic i_rst,
 
@@ -34,59 +38,83 @@ module i2c_master_wrapper (
     // CMD FIFO
     logic s_cmd_valid, s_cmd_ready;
     t_i2c_cmd s_cmd_data;
-    mu_fifo_sync #(
-        .DW($bits(i_cmd_fifo_data)),
-        .DEPTH(16)
-    ) inst_cmd_fifo (
-        .clk            (i_clk),
-        .rst            (i_rst),
-        .wr_valid       (i_cmd_fifo_valid),
-        .wr_data        (i_cmd_fifo_data),
-        .wr_ready       (o_cmd_fifo_ready),
-        .wr_almost_full (),
-        .wr_full        (),
-        .rd_valid       (s_cmd_valid),
-        .rd_data        (s_cmd_data),
-        .rd_ready       (s_cmd_ready)
-    );
+    generate
+    if (CMD_FIFO) begin : gen_cmd_fifo
+        mu_fifo_sync #(
+            .DW($bits(i_cmd_fifo_data)),
+            .DEPTH(16)
+        ) inst_cmd_fifo (
+            .clk            (i_clk),
+            .rst            (i_rst),
+            .wr_valid       (i_cmd_fifo_valid),
+            .wr_data        (i_cmd_fifo_data),
+            .wr_ready       (o_cmd_fifo_ready),
+            .wr_almost_full (),
+            .wr_full        (),
+            .rd_valid       (s_cmd_valid),
+            .rd_data        (s_cmd_data),
+            .rd_ready       (s_cmd_ready)
+        );
+    end else begin : gen_cmd_assign
+        assign s_cmd_valid = i_cmd_fifo_valid;
+        assign s_cmd_data = i_cmd_fifo_data;
+        assign o_cmd_fifo_ready = s_cmd_ready;
+    end
+    endgenerate
 
     // WRITE FIFO
     logic s_write_valid, s_write_ready;
     logic [7:0] s_write_data;
-    mu_fifo_sync #(
-        .DW($bits(i_wr_fifo_data)),
-        .DEPTH(16)
-    ) inst_write_fifo (
-        .clk            (i_clk),
-        .rst            (i_rst),
-        .wr_valid       (i_wr_fifo_valid),
-        .wr_data        (i_wr_fifo_data),
-        .wr_ready       (o_wr_fifo_ready),
-        .wr_almost_full (),
-        .wr_full        (),
-        .rd_valid       (s_write_valid),
-        .rd_data        (s_write_data),
-        .rd_ready       (s_write_ready)
-    );
+    generate
+    if (WR_FIFO) begin : gen_wr_fifo
+        mu_fifo_sync #(
+            .DW($bits(i_wr_fifo_data)),
+            .DEPTH(16)
+        ) inst_write_fifo (
+            .clk            (i_clk),
+            .rst            (i_rst),
+            .wr_valid       (i_wr_fifo_valid),
+            .wr_data        (i_wr_fifo_data),
+            .wr_ready       (o_wr_fifo_ready),
+            .wr_almost_full (),
+            .wr_full        (),
+            .rd_valid       (s_write_valid),
+            .rd_data        (s_write_data),
+            .rd_ready       (s_write_ready)
+        );
+    end else begin : gen_wr_assign
+        assign s_write_valid = i_wr_fifo_valid;
+        assign s_write_data = i_wr_fifo_data;
+        assign o_wr_fifo_ready = s_write_ready;
+    end
+    endgenerate
 
     // READ FIFO
     logic s_read_valid, s_read_ready;
     logic [7:0] s_read_data;
-    mu_fifo_sync #(
-        .DW($bits(o_rd_fifo_data)),
-        .DEPTH(16)
-    ) inst_read_fifo (
-        .clk            (i_clk),
-        .rst            (i_rst),
-        .wr_valid       (s_read_valid),
-        .wr_data        (s_read_data),
-        .wr_ready       (s_read_ready),
-        .wr_almost_full (),
-        .wr_full        (),
-        .rd_valid       (o_rd_fifo_valid),
-        .rd_data        (o_rd_fifo_data),
-        .rd_ready       (i_rd_fifo_ready)
-    );
+    generate
+    if (RD_FIFO) begin : gen_rd_fifo
+        mu_fifo_sync #(
+            .DW($bits(o_rd_fifo_data)),
+            .DEPTH(16)
+        ) inst_read_fifo (
+            .clk            (i_clk),
+            .rst            (i_rst),
+            .wr_valid       (s_read_valid),
+            .wr_data        (s_read_data),
+            .wr_ready       (s_read_ready),
+            .wr_almost_full (),
+            .wr_full        (),
+            .rd_valid       (o_rd_fifo_valid),
+            .rd_data        (o_rd_fifo_data),
+            .rd_ready       (i_rd_fifo_ready)
+        );
+    end else begin : gen_rd_assign
+        assign o_rd_fifo_valid = s_read_valid;
+        assign o_rd_fifo_data = s_read_data;
+        assign s_read_ready = i_rd_fifo_ready;
+    end
+    endgenerate
 
     i2c_master #(
         .BURST_WIDTH (BURST_WIDTH),

@@ -33,7 +33,7 @@ module i2c_stop_gen #(
         t_states state, state_return;
         logic sda;
         logic scl;
-        logic [$clog2(c_tansaction_time)-1:0] timeout_counter;
+        logic [$clog2(c_tansaction_time)+3:0] timeout_counter;
     } t_control;
 
     t_control s_r, s_r_next;
@@ -108,7 +108,8 @@ module i2c_stop_gen #(
             SDA_UP: begin
                 s_r_next.state = WAIT;
                 s_r_next.state_return = DONE;
-                s_r_next.timeout_counter = c_tansaction_time;
+                // s_r_next.timeout_counter = c_tansaction_time << 3;
+                s_r_next.timeout_counter = '1;
                 s_r_next.sda = 1'b1;
             end
             DONE: begin
