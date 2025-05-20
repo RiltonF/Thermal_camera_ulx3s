@@ -5,7 +5,7 @@ import package_cam::*;
 
 module camera_top #(
     parameter int p_fb_upscale = 2,
-    parameter int p_scaler = 1,
+    parameter int p_scaler = 2,
     parameter int p_pixel_width  = 640,
     parameter int p_pixel_height = 480,
 
@@ -47,6 +47,7 @@ module camera_top #(
 
     // assign s_fb_wr_addr = {s_wr_col,s_wr_row};
     assign s_fb_wr_addr = (s_wr_row<<7) + (s_wr_row<<5) + s_wr_col - 1;
+    // assign s_fb_wr_addr = (s_wr_row*160) + s_wr_col  -15;
 
     assign led[7:1] = s_wr_col;
     assign led[0] = s_fb_wr_valid;
@@ -56,7 +57,6 @@ module camera_top #(
         .i_clk       (i_clk),
         .i_rst       (i_rst),
         .i_rgb       (s_fb_rd_data),
-        // .o_gray_rgb  (s_wr_gray_data)
         .o_gray(s_gray_data)
     );
 
@@ -69,7 +69,7 @@ module camera_top #(
         .i_clk_wr(i_camera.clk_pixel),
         .i_wr_valid(s_fb_wr_valid),
         .i_wr_addr(s_fb_wr_addr),
-        .i_wr_data((s_fb_wr_addr == 160) ? '1: s_fb_wr_data),
+        .i_wr_data(s_fb_wr_data),
         .i_rd_req(s_fb_rd_valid),
         .i_rd_addr(s_fb_rd_addr),
         .o_rd_data(s_fb_rd_data)
@@ -105,9 +105,9 @@ module camera_top #(
     assign s_fb_rd_valid = s_read_valid;
     always_comb begin
         if(s_switch) begin
-            o_data [2] = (s_draw_valid[1])? r_grey: '0;
-            o_data [1] = (s_draw_valid[1])? g_grey: s_line_cnt;
-            o_data [0] = (s_draw_valid[1])? b_grey: i_x_pos;
+            o_data [2] = (s_draw_valid[1])? r_grey: '1;
+            o_data [1] = (s_draw_valid[1])? g_grey: '0;
+            o_data [0] = (s_draw_valid[1])? b_grey: '0;
         end else begin
             o_data [2] = (s_draw_valid[1])? r_color: '0;
             o_data [1] = (s_draw_valid[1])? g_color: s_line_cnt;

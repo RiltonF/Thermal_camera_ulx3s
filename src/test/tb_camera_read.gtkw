@@ -1,0 +1,37 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Sat May 17 22:28:56 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Sat May 17 22:22:17 2025"
+[dumpfile_size] 1617
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_camera_read.gtkw"
+[timestart] 2877000
+[size] 2560 1358
+[pos] -781 -380
+*-17.269737 3320000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_camera_read.
+[sst_width] 274
+[signals_width] 181
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@28
+tb_camera_read.dut.i_clk
+@22
+tb_camera_read.dut.i_data[7:0]
+@28
+tb_camera_read.dut.i_href
+tb_camera_read.dut.i_rst
+tb_camera_read.dut.i_vsync
+@24
+tb_camera_read.dut.o_col[9:0]
+tb_camera_read.dut.o_row[9:0]
+@22
+tb_camera_read.dut.o_data[15:0]
+@28
+tb_camera_read.dut.o_frame_done
+tb_camera_read.dut.o_valid
+tb_camera_read.dut.s_pixel_half
+tb_camera_read.dut.s_state[1:0]
+[pattern_trace] 1
+[pattern_trace] 0

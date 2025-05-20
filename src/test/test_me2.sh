@@ -32,5 +32,6 @@ MODULE_BASENAME="${MODULE_FILE%.*}"
 if [ -z "$NO_WAVE" ]; then
 	echo "Opening Wave file"
 	# gtkwave --rcvar 'use_big_fonts 1' wave.vcd wave.gtkw	
-	gtkwave --rcvar 'use_big_fonts 1' ${MODULE_BASENAME}.fst ${MODULE_BASENAME}.gtkw	
+	gtkwave --rcvar 'use_big_fonts 1' wave.fst ${MODULE_BASENAME}.gtkw	
+	# gtkwave --rcvar 'use_big_fonts 1' ${MODULE_BASENAME}.fst ${MODULE_BASENAME}.gtkw	
 fi

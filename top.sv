@@ -157,7 +157,7 @@ module top #(
     logic signed [15:0] s_y_pos;
 
     camera_top #(
-      .p_scaler(2)
+      // .p_scaler(2)
       )inst_camera_top (
       .i_clk(s_clk_pixel),
       .i_rst(s_rst),

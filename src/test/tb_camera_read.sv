@@ -84,10 +84,12 @@ module tb_camera_read();
             wait_cycles(4);
             i_vsync = 1;
             wait_cycles(4);
+            repeat (5) begin
             i_href = 1;
-            wait_cycles(10);
+            wait_cycles(160*2);
             i_href = 0;
             wait_cycles(4);
+        end
             i_vsync = 0;
             end
         end
