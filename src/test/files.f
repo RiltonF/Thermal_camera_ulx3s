@@ -3,4 +3,5 @@
 +incdir+../
 +incdir+../misc
 +incdir+../memory
++incdir+../mem
 +incdir+./

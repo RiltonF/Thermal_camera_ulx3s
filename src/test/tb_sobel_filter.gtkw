@@ -1,0 +1,104 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Wed May 21 20:44:21 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Wed May 21 20:40:47 2025"
+[dumpfile_size] 14577
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_sobel_filter.gtkw"
+[timestart] 13358300
+[size] 2560 1358
+[pos] -1 -1
+*-15.448808 13520000 13740000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_sobel_filter.
+[treeopen] tb_sobel_filter.dut.
+[treeopen] tb_sobel_filter.dut.gen_buffers[0].
+[treeopen] tb_sobel_filter.dut.gen_buffers[1].
+[sst_width] 274
+[signals_width] 331
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@420
+tb_sobel_filter.dut.p_y_max
+tb_sobel_filter.dut.p_x_max
+@100000028
+tb_sobel_filter.dut.c_reset
+@420
+tb_sobel_filter.dut.c_x_width
+tb_sobel_filter.dut.c_y_width
+@28
+tb_sobel_filter.dut.i_clk
+@22
+tb_sobel_filter.dut.i_data[7:0]
+@28
+tb_sobel_filter.dut.i_rst
+tb_sobel_filter.dut.i_valid
+@420
+tb_sobel_filter.dut.p_data_width
+@24
+tb_sobel_filter.dut.d_x_counter[8:0]
+@22
+tb_sobel_filter.dut.d_y_counter[7:0]
+@28
+[color] 3
+tb_sobel_filter.dut.d_active_buffer
+@22
+tb_sobel_filter.dut.d_mem_buffer[47:0]
+[color] 3
+tb_sobel_filter.dut.d_mem0_buffer[23:0]
+[color] 2
+tb_sobel_filter.dut.d_mem1_buffer[23:0]
+[color] 7
+tb_sobel_filter.dut.d_live_buffer[23:0]
+@28
+[color] 7
+tb_sobel_filter.dut.d_valid_in
+@22
+tb_sobel_filter.dut.d_data_in[7:0]
+@420
+[color] 1
+tb_sobel_filter.dut.d_x_comp[10:0]
+[color] 1
+tb_sobel_filter.dut.d_y_comp[10:0]
+@28
+tb_sobel_filter.dut.d_comp_valid
+@29
+tb_sobel_filter.dut.o_valid
+@24
+tb_sobel_filter.dut.o_data[10:0]
+@200
+-
+-mem 0
+@28
+tb_sobel_filter.dut.gen_buffers[0].inst_row_buffer.clk
+tb_sobel_filter.dut.gen_buffers[0].inst_row_buffer.re
+@24
+tb_sobel_filter.dut.gen_buffers[0].inst_row_buffer.raddr[7:0]
+@22
+[color] 6
+tb_sobel_filter.dut.gen_buffers[0].inst_row_buffer.rd[7:0]
+@28
+tb_sobel_filter.dut.gen_buffers[0].inst_row_buffer.we
+@24
+tb_sobel_filter.dut.gen_buffers[0].inst_row_buffer.waddr[7:0]
+@22
+tb_sobel_filter.dut.gen_buffers[0].inst_row_buffer.wr[7:0]
+@200
+-
+-mem 1
+@28
+tb_sobel_filter.dut.gen_buffers[1].inst_row_buffer.clk
+tb_sobel_filter.dut.gen_buffers[1].inst_row_buffer.re
+@24
+tb_sobel_filter.dut.gen_buffers[1].inst_row_buffer.raddr[7:0]
+@22
+[color] 6
+tb_sobel_filter.dut.gen_buffers[1].inst_row_buffer.rd[7:0]
+@28
+tb_sobel_filter.dut.gen_buffers[1].inst_row_buffer.we
+@24
+tb_sobel_filter.dut.gen_buffers[1].inst_row_buffer.waddr[7:0]
+@22
+tb_sobel_filter.dut.gen_buffers[1].inst_row_buffer.wr[7:0]
+[pattern_trace] 1
+[pattern_trace] 0
