@@ -53,11 +53,28 @@ module camera_top #(
     assign led[0] = s_fb_wr_valid;
 
     logic [7:0] s_gray_data;
+    //pure combinatorial
     rgb565_to_grayscale inst_grayscale (
         .i_clk       (i_clk),
         .i_rst       (i_rst),
         .i_rgb       (s_fb_rd_data),
         .o_gray(s_gray_data)
+    );
+
+    logic [10:0] s_edge_data;
+    logic s_edge_valid;
+    logic [2:0] s_draw_valid;
+    sobel_filter #(
+        .p_x_max(c_fb_width),
+        .p_y_max(c_fb_height),
+        .p_data_width(8)
+    ) inst_sobel_filter (
+        .i_clk       (i_clk),
+        .i_rst       (i_rst|i_frame),
+        .i_valid(s_draw_valid[1]),
+        .i_data(s_gray_data),
+        .o_valid(s_edge_valid),
+        .o_data(s_edge_data)
     );
 
 
@@ -89,11 +106,13 @@ module camera_top #(
     );
 
     logic s_read_valid;
-    logic [2:0] s_draw_valid;
     logic [p_fb_upscale-1:0] s_scalex_count;
     logic [p_fb_upscale-1:0] s_scaley_count;
     logic [c_fb_addrw-1:0] s_scaley_addr_hold;
-    logic s_switch;
+    logic [1:0] s_switch;
+    wire [7:0] r_edge = { s_edge_data [7:3], 3'b000};
+    wire [7:0] g_edge = { s_edge_data [7:2], 2'b000};
+    wire [7:0] b_edge = { s_edge_data [7:3], 3'b000};
     wire [7:0] r_grey = { s_gray_data [7:3], 3'b000};
     wire [7:0] g_grey = { s_gray_data [7:2], 2'b000};
     wire [7:0] b_grey = { s_gray_data [7:3], 3'b000};
@@ -104,15 +123,28 @@ module camera_top #(
 
     assign s_fb_rd_valid = s_read_valid;
     always_comb begin
-        if(s_switch) begin
-            o_data [2] = (s_draw_valid[1])? r_grey: '1;
-            o_data [1] = (s_draw_valid[1])? g_grey: '0;
-            o_data [0] = (s_draw_valid[1])? b_grey: '0;
-        end else begin
-            o_data [2] = (s_draw_valid[1])? r_color: '0;
-            o_data [1] = (s_draw_valid[1])? g_color: s_line_cnt;
-            o_data [0] = (s_draw_valid[1])? b_color: i_x_pos;
-        end
+        case(s_switch)
+            4'd0: begin
+                o_data [2] = (s_draw_valid[1])? r_grey: '1;
+                o_data [1] = (s_draw_valid[1])? g_grey: '0;
+                o_data [0] = (s_draw_valid[1])? b_grey: '0;
+            end
+            4'd1: begin
+                o_data [2] = (s_draw_valid[1])? r_color: '0;
+                o_data [1] = (s_draw_valid[1])? g_color: s_line_cnt;
+                o_data [0] = (s_draw_valid[1])? b_color: i_x_pos;
+            end
+            4'd3: begin
+                o_data [2] = (s_edge_valid)? r_edge: '1;
+                o_data [1] = (s_edge_valid)? g_edge: '0;
+                o_data [0] = (s_edge_valid)? b_edge: '0;
+            end
+            default: begin
+                o_data [2] = (s_draw_valid[1])? '0: '1;
+                o_data [1] = (s_draw_valid[1])? '1: '0;
+                o_data [0] = (s_draw_valid[1])? '0: '0;
+            end
+        endcase
     end
 
     always_ff @(posedge i_clk) begin
@@ -123,7 +155,7 @@ module camera_top #(
             s_line_cnt <= '0;
             s_switch <= '0;
         end else begin
-            if (i_toggle) s_switch <= ~s_switch;
+            if (i_toggle) s_switch <= s_switch + 1'b1;
             s_read_valid <= (i_y_pos >= c_y_start )
                           & (i_y_pos < c_y_start + (c_fb_height << p_fb_upscale))
                           & (i_x_pos >= c_x_start - c_mem_latency)

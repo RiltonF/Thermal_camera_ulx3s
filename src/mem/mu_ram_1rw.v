@@ -45,7 +45,7 @@ module mu_ram_1rw #(
         if (we) begin
             mem[addr] <= wr;
         end
-        else if (re) begin
+        else begin
             rd_reg <= mem[addr];
         end
     end

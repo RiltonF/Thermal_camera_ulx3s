@@ -8,7 +8,7 @@ module sobel_filter #(
     parameter int p_data_width = 8,
     localparam int c_x_width = $clog2(p_x_max),
     localparam int c_y_width = $clog2(p_y_max),
-    localparam int c_sobel_comp_width = $clog2(4*(2**8)+2*(2**9))
+    localparam int c_sobel_comp_width = $clog2(4*(2**p_data_width)+2*(2**(p_data_width+1)))
 ) (
     input  logic i_clk,
     input  logic i_rst,
