@@ -106,6 +106,54 @@ module tb_sobel_filter();
 
     `TEST_SUITE("TESTSUITE_NAME")
 
+    `UNIT_TEST("border check")
+    #1ns;
+    fork
+    begin
+        i_valid = 1;
+        repeat (140) begin
+            i_valid = 1;
+            for(int i = 0; i<160; i++) begin
+                i_valid = 1;
+                i_data = {2{4'(15-i)}};
+                wait_cycles(1);
+                i_valid = 0;
+                // `ASSERT(dut.d_mem0_buffer == dut.d_live_buffer);
+                `ASSERT(dut.d_mem1_buffer == dut.d_live_buffer);
+                wait_cycles(1);
+                // `ASSERT(dut.d_mem0_buffer == dut.d_live_buffer);
+                `ASSERT(dut.d_mem1_buffer == dut.d_live_buffer);
+            end
+            i_valid = 0;
+            wait_cycles(10);
+        end
+            wait_cycles(10);
+        i_valid = 1;
+        repeat (10) begin
+        for(int i = 0; i<16; i++) begin
+            i_valid = 1;
+            i_data = {2{4'(15-i)}};
+            wait_cycles(1);
+            i_valid = 0;
+            `ASSERT(dut.d_mem0_buffer == dut.d_live_buffer);
+            `ASSERT(dut.d_mem1_buffer == dut.d_live_buffer);
+            wait_cycles(1);
+            `ASSERT(dut.d_mem0_buffer == dut.d_live_buffer);
+            `ASSERT(dut.d_mem1_buffer == dut.d_live_buffer);
+        end
+        end
+            wait_cycles(1);
+            `ASSERT(dut.s_mem_wr_valid[1]);
+            wait_cycles(1);
+            `ASSERT(dut.s_mem_wr_valid[1]);
+            wait_cycles(1);
+            `ASSERT(dut.s_mem_wr_valid[1]);
+            wait_cycles(1);
+            `ASSERT(~dut.s_mem_wr_valid[1]);
+    end
+    join
+    `UNIT_TEST_END
+
     `UNIT_TEST("Sobel components")
     #1ns;
     fork

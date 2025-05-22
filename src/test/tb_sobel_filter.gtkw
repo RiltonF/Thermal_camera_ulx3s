@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Wed May 21 20:44:21 2025
+[*] Thu May 22 09:31:08 2025
 [*]
 [dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
-[dumpfile_mtime] "Wed May 21 20:40:47 2025"
-[dumpfile_size] 14577
+[dumpfile_mtime] "Thu May 22 09:24:37 2025"
+[dumpfile_size] 299101
 [savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_sobel_filter.gtkw"
-[timestart] 13358300
+[timestart] 385453000
 [size] 2560 1358
 [pos] -1 -1
-*-15.448808 13520000 13740000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-20.578445 2440000 13740000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_sobel_filter.
 [treeopen] tb_sobel_filter.dut.
 [treeopen] tb_sobel_filter.dut.gen_buffers[0].
@@ -37,7 +37,7 @@ tb_sobel_filter.dut.i_valid
 tb_sobel_filter.dut.p_data_width
 @24
 tb_sobel_filter.dut.d_x_counter[8:0]
-@22
+@25
 tb_sobel_filter.dut.d_y_counter[7:0]
 @28
 [color] 3
@@ -62,7 +62,6 @@ tb_sobel_filter.dut.d_x_comp[10:0]
 tb_sobel_filter.dut.d_y_comp[10:0]
 @28
 tb_sobel_filter.dut.d_comp_valid
-@29
 tb_sobel_filter.dut.o_valid
 @24
 tb_sobel_filter.dut.o_data[10:0]

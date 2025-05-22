@@ -105,7 +105,8 @@ module sobel_filter #(
             s_r_next.valid_in = 1'b1;
             s_r_next.x_counter++;
         end else begin
-            s_r_next.y_counter++; //increment the y_counter
+            s_r_next.y_counter = (s_r.y_counter < p_y_max-1) ? s_r.y_counter + 1'b1 : '0;
+            // s_r_next.y_counter++; //increment the y_counter
             s_r_next.valid_in = 1'b0;
             s_r_next.x_counter = '0;
             s_r_next.active_buffer = ~s_r.active_buffer; //switch buffers
@@ -125,7 +126,7 @@ module sobel_filter #(
         // Max is the p_x_max, and + 1 since the counter runs one cycle faster ^
         // Ignore the first and last rows 0 < y_counter < 159
         if (s_r.x_counter > 3 & s_r.x_counter < (p_x_max + 2) &
-            s_r.y_counter > 0 & s_r.y_counter < (p_y_max - 2)) begin
+            s_r.y_counter > 0 & s_r.y_counter < (p_y_max - 1)) begin
             //Compute filter
             if (s_r.valid_in) begin
                 //Have to use constants for 2D vectors because iverilog
