@@ -8,14 +8,16 @@ module sobel_filter #(
     parameter int p_data_width = 8,
     localparam int c_x_width = $clog2(p_x_max),
     localparam int c_y_width = $clog2(p_y_max),
-    localparam int c_sobel_comp_width = $clog2(4*(2**p_data_width)+2*(2**(p_data_width+1)))
+    localparam int c_sobel_comp_width = $clog2(4*(2**p_data_width)+2*(2**(p_data_width+1))),
+    localparam int c_addr_width = $clog2(p_x_max * p_y_max)
 ) (
     input  logic i_clk,
     input  logic i_rst,
     input  logic i_valid,
     input  logic [p_data_width-1:0] i_data,
     output logic o_valid,
-    output logic [c_sobel_comp_width-1:0] o_data
+    output logic [c_sobel_comp_width-1:0] o_data,
+    output logic [c_addr_width-1:0] o_addr
 );
     //Memory interface signals
     logic                    s_mem_rd_valid [2];
@@ -40,6 +42,7 @@ module sobel_filter #(
         logic comp_valid;
         logic unsigned [c_sobel_comp_width-1:0] sobel_mag;
         logic mag_valid;
+        logic [c_addr_width-1:0] mag_addr;
     }t_signals;
 
     t_signals s_r, s_r_next;
@@ -90,8 +93,10 @@ module sobel_filter #(
     assign s_mem_rd_addr[0] = s_r.x_counter;
     assign s_mem_rd_addr[1] = s_r.x_counter;
 
-    assign o_valid = s_r.mag_valid;
+    // assign o_valid = s_r.mag_valid;
+    assign o_valid = s_r.comp_valid;
     assign o_data = s_r.sobel_mag;
+    assign o_addr = s_r.mag_addr;
     always_comb begin
         s_r_next = s_r;
 
@@ -106,7 +111,6 @@ module sobel_filter #(
             s_r_next.x_counter++;
         end else begin
             s_r_next.y_counter = (s_r.y_counter < p_y_max-1) ? s_r.y_counter + 1'b1 : '0;
-            // s_r_next.y_counter++; //increment the y_counter
             s_r_next.valid_in = 1'b0;
             s_r_next.x_counter = '0;
             s_r_next.active_buffer = ~s_r.active_buffer; //switch buffers
@@ -119,14 +123,22 @@ module sobel_filter #(
             s_r_next.live_buffer = {s_r.live_buffer[1:0], s_r.data_in};
         end
 
+        //Addr generate for saving to ram
+        if (s_r.y_counter == 0) begin
+            //we want to start with max y count
+            s_r_next.mag_addr = (p_y_max-1)*p_x_max + s_r.x_counter - 2;
+        end else begin
+            s_r_next.mag_addr = (s_r.y_counter - 1)*p_x_max + s_r.x_counter - 2;
+        end
+
         //sobel filter
         //Valid window starts at index 3
-        s_r_next.comp_valid = s_r.valid_in & s_r.x_counter > 2 & s_r.x_counter < (p_x_max + 3);
+        s_r_next.comp_valid = s_r.valid_in & s_r.x_counter > 1 & s_r.x_counter < (p_x_max + 2);
         // Need minimum of 3 samples, x_counter runs one cycle faster so > 3,
         // Max is the p_x_max, and + 1 since the counter runs one cycle faster ^
         // Ignore the first and last rows 0 < y_counter < 159
-        if (s_r.x_counter > 3 & s_r.x_counter < (p_x_max + 2) &
-            s_r.y_counter > 0 & s_r.y_counter < (p_y_max - 1)) begin
+        if (s_r.x_counter > 3 & s_r.x_counter < (p_x_max) &
+            s_r.y_counter > 1 & s_r.y_counter < (p_y_max)) begin
             //Compute filter
             if (s_r.valid_in) begin
                 //Have to use constants for 2D vectors because iverilog
@@ -158,21 +170,27 @@ module sobel_filter #(
                                       +$signed(s_r.live_buffer[1]<<1)
                                       +$signed(s_r.live_buffer[0]);
                 end
+                // mag = abs(x_comp) + abs(y_comp)
+                // msb is the sign bit
+                s_r_next.sobel_mag = 
+                    ((s_r_next.x_comp[c_sobel_comp_width-1]) ? -s_r_next.x_comp : s_r_next.x_comp) +
+                    ((s_r_next.y_comp[c_sobel_comp_width-1]) ? -s_r_next.y_comp : s_r_next.y_comp);
             end
         end else begin
             //We ignore the border pixels to avoid padding
             s_r_next.x_comp = '0;
             s_r_next.y_comp = '0;
+            s_r_next.sobel_mag = '0; 
         end
         //final sobbel step
-        s_r_next.mag_valid = s_r.comp_valid;
-        if (s_r.comp_valid) begin
+        // s_r_next.mag_valid = s_r.comp_valid;
+        // if (s_r.comp_valid) begin
             // mag = abs(x_comp) + abs(y_comp)
             // msb is the sign bit
-            s_r_next.sobel_mag = 
-                ((s_r.x_comp[c_sobel_comp_width-1]) ? -s_r.x_comp : s_r.x_comp) +
-                ((s_r.y_comp[c_sobel_comp_width-1]) ? -s_r.y_comp : s_r.y_comp);
-        end
+            // s_r_next.sobel_mag = 
+            //     ((s_r.x_comp[c_sobel_comp_width-1]) ? -s_r.x_comp : s_r.x_comp) +
+                // ((s_r.y_comp[c_sobel_comp_width-1]) ? -s_r.y_comp : s_r.y_comp);
+        // end
     end
 
     always_ff @(posedge i_clk) begin
@@ -182,8 +200,6 @@ module sobel_filter #(
             s_r <= s_r_next;
         end
     end
-
-
 
     generate
     for(genvar i = 0; i < 2; i++) begin : gen_buffers

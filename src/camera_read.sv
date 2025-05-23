@@ -42,6 +42,7 @@ module camera_read (
                 ROW_CAPTURE: begin
                     s_state <= t_states'((i_vsync) ? ROW_CAPTURE : WAIT_FRAME_START);
                     o_valid <= i_href & s_pixel_half;
+                    o_col<= (o_valid) ? o_col + 1 : o_col;
                     if (i_href) begin
                         s_pixel_half <= ~s_pixel_half;
                         if (~s_pixel_half) begin
@@ -49,7 +50,6 @@ module camera_read (
                             o_data[15:8] <= i_data;
                         end else begin
                             o_data[7:0] <= i_data;
-                            o_col<= o_col + 1;
                         end
                     end else begin
                         s_pixel_half <= '0; //redundant?

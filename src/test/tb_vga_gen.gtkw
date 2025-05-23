@@ -1,0 +1,32 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Thu May 22 14:48:04 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Thu May 22 14:46:18 2025"
+[dumpfile_size] 180739
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_vga_gen.gtkw"
+[timestart] 367805900
+[size] 2560 1358
+[pos] -1 -1
+*-15.546070 368050000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_vga_gen.
+[sst_width] 274
+[signals_width] 222
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@28
+tb_vga_gen.dut.i_clk_pixel
+tb_vga_gen.dut.i_rst
+@29
+tb_vga_gen.dut.o_data_en
+@28
+tb_vga_gen.dut.o_frame
+tb_vga_gen.dut.o_hsync
+tb_vga_gen.dut.o_line
+tb_vga_gen.dut.o_vsync
+@420
+tb_vga_gen.dut.o_x_pos[15:0]
+tb_vga_gen.dut.o_y_pos[15:0]
+[pattern_trace] 1
+[pattern_trace] 0

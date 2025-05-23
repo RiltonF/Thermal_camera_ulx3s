@@ -15,9 +15,13 @@ module rgb565_to_grayscale (
 
     wire [3:0] s_gray_4bit = o_gray[7:4];
     assign o_gray_rgb = {4{s_gray_4bit}};
+    // Averaging grayscale
     // assign o_gray = (s_red + s_green + s_blue)/3;
+
+    // Luminosity grayscale
     assign o_gray = (s_red*'d77 + s_green*'d150 + s_blue*'d29) >> 8;
 
+    // Clocked grayscale. Enable this if having timing issues.
     // always_ff @(posedge i_clk) begin
     //     if (i_rst) begin
     //         o_gray <= '0;

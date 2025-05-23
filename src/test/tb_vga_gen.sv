@@ -8,29 +8,63 @@ module tb_vga_gen();
 
     `SVUT_SETUP
 
-    logic clk_pixel = 1;
-    logic i_rst;
+    parameter int p_pixel_width       = 640;
+    parameter int p_pixel_height      = 480;
+    parameter int p_hsync_front_porch =  16;
+    parameter int p_hsync_pulse       =  96;
+    parameter int p_hsync_back_porch  =  48;
+    parameter int p_vsync_front_porch =  10;
+    parameter int p_vsync_pulse       =  2;
+    parameter int p_vsync_back_porch  =  33;
+    parameter bit p_hsync_polarity = 1;
+    parameter bit p_vsync_polarity = 1;
+    parameter int p_count_width = 16;
+
+    logic clk=1;
+    logic rst=1;
     logic o_hsync;
     logic o_vsync;
-    logic o_blank;
-    logic [7:0] o_data [3];
+    logic o_data_en;
+    logic o_frame;
+    logic o_line;
+    logic [7:0] o_data_test [3];
+    logic signed [p_count_width-1:0] o_x_pos;
+    logic signed [p_count_width-1:0] o_y_pos;
 
     vga_gen 
+    #(
+    .p_pixel_width    (p_pixel_width),
+    .p_pixel_height   (p_pixel_height),
+    .p_hsync_front_porch (p_hsync_front_porch),
+    .p_hsync_pulse    (p_hsync_pulse),
+    .p_hsync_back_porch (p_hsync_back_porch),
+    .p_vsync_front_porch (p_vsync_front_porch),
+    .p_vsync_pulse    (p_vsync_pulse),
+    .p_vsync_back_porch (p_vsync_back_porch),
+    .p_hsync_polarity (p_hsync_polarity),
+    .p_vsync_polarity (p_vsync_polarity),
+    .p_count_width    (p_count_width)
+    )
     dut 
     (
-    .i_clk_pixel (clk_pixel),
-    .i_rst       (i_rst),
+    .i_clk_pixel (clk),
+    .i_rst       (rst),
     .o_hsync     (o_hsync),
     .o_vsync     (o_vsync),
-    .o_data_en(o_blank),
-    .o_data      (o_data)
+    .o_data_en   (o_data_en),
+    .o_frame     (o_frame),
+    .o_line      (o_line),
+    .o_data_test,
+    .o_x_pos     (o_x_pos),
+    .o_y_pos     (o_y_pos)
     );
 
-    always #(5ns) clk_pixel= ~clk_pixel; // verilator lint_off STMTDLY
+    task automatic wait_cycles(input int n);
+        repeat (n) @(posedge clk);
+    endtask
 
-    // To create a clock:
-    // initial aclk = 0;
-    // always #2 aclk = !aclk;
+    //Clocks
+    always #(5ns) clk= ~clk; // verilator lint_off STMTDLY
 
     // To dump data for visualization:
     initial begin
@@ -44,9 +78,9 @@ module tb_vga_gen();
     task setup(msg="");
     begin
         // setup() runs when a test begins
-        i_rst = 1;
-        #100ns;
-        i_rst = 0;
+        rst=1;
+        wait_cycles(4);
+        rst=0;
     end
     endtask
 
@@ -57,20 +91,11 @@ module tb_vga_gen();
     endtask
 
     `TEST_SUITE("TESTSUITE_NAME")
+
     `UNIT_TEST("TESTCASE_NAME")
-        #1;
-        force dut.y_counter = 'd477;
-        repeat (4) @(posedge clk_pixel);
-        release dut.y_counter;
-        repeat (200000) @(posedge clk_pixel);
-        // #10000000ns;
-
-        // Describe here the testcase scenario
-        //
-        // Because SVUT uses long nested macros, it's possible
-        // some local variable declaration leads to compilation issue.
-        // You should declare your variables after the IOs declaration to avoid that.
-
+        #1ns;
+        wait(o_data_en);
+        wait_cycles(640*20);
     `UNIT_TEST_END
 
     `TEST_SUITE_END

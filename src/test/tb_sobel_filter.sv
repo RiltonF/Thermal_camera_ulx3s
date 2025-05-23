@@ -120,7 +120,7 @@ module tb_sobel_filter();
                 i_valid = 0;
                 // `ASSERT(dut.d_mem0_buffer == dut.d_live_buffer);
                 `ASSERT(dut.d_mem1_buffer == dut.d_live_buffer);
-                wait_cycles(1);
+                wait_cycles(3);
                 // `ASSERT(dut.d_mem0_buffer == dut.d_live_buffer);
                 `ASSERT(dut.d_mem1_buffer == dut.d_live_buffer);
             end
