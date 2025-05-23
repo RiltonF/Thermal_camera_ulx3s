@@ -111,7 +111,7 @@ module camera_top #(
         .i_clk_wr(i_camera.clk_pixel),
         .i_wr_valid(s_edge_valid),
         .i_wr_addr (s_edge_addr),
-        .i_wr_data (s_edge_data_pre),
+        .i_wr_data (s_edge_data_pre<<1),
         .i_rd_req  (s_fb_rd_valid),
         .i_rd_addr (s_fb_rd_addr),
         .o_rd_data (s_edge_rd_data)
@@ -194,23 +194,36 @@ module camera_top #(
         v_shift_index = 0;
         // case(s_switch)
         // case((s_rd_x>>5)+(s_rd_x>>3))
-        if (s_rd_x < 40) begin
+        if (s_rd_x < 53) begin
             o_data [2] = r_color;
             o_data [1] = g_color;
             o_data [0] = b_color;
-        end else if (s_rd_x < 80) begin
+        end else if (s_rd_x < 106) begin
             o_data [2] = r_grey;
             o_data [1] = g_grey;
             o_data [0] = b_grey;
-        end else if (s_rd_x < 120) begin
-            o_data [2] = r_edge_mem;
-            o_data [1] = g_edge_mem;
-            o_data [0] = b_edge_mem;
         end else begin
             o_data [2] = r_edge_mem;
             o_data [1] = g_edge_mem;
             o_data [0] = b_edge_mem;
         end
+        // if (s_rd_x < 40) begin
+        //     o_data [2] = r_color;
+        //     o_data [1] = g_color;
+        //     o_data [0] = b_color;
+        // end else if (s_rd_x < 80) begin
+        //     o_data [2] = r_grey;
+        //     o_data [1] = g_grey;
+        //     o_data [0] = b_grey;
+        // end else if (s_rd_x < 120) begin
+        //     o_data [2] = r_edge_mem;
+        //     o_data [1] = g_edge_mem;
+        //     o_data [0] = b_edge_mem;
+        // end else begin
+        //     o_data [2] = r_edge_mem;
+        //     o_data [1] = g_edge_mem;
+        //     o_data [0] = b_edge_mem;
+        // end
         o_de = s_shift_de[v_shift_index];
         o_vsync = s_shift_vsync[v_shift_index];
         o_hsync = s_shift_hsync[v_shift_index];
@@ -218,7 +231,7 @@ module camera_top #(
 
     always_ff @(posedge i_clk) begin
         if (i_rst) begin
-            s_switch <= '0;
+            s_switch <= '1;
         end else begin
             if (i_toggle) s_switch <= s_switch + 1'b1;
         end
