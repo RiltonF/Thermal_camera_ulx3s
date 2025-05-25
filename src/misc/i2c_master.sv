@@ -1,12 +1,24 @@
 `default_nettype none
 `timescale 1ns / 1ps
 /* verilator lint_off WIDTHEXPAND */
-import package_i2c::*;
+import package_i2c::BURST_WIDTH;
+import package_i2c::BURST_WIDTH_16b;
+import package_i2c::t_gen_states;
+import package_i2c::NONE;
+import package_i2c::START;
+import package_i2c::BYTE;
+import package_i2c::STOP;
 
 module i2c_master #(
-    parameter int BURST_WIDTH = 4,
+    // parameter int BURST_WIDTH = 4,
     parameter int CLK_FREQ = 25_000_000,
-    parameter int I2C_FREQ = 100_000
+    parameter int I2C_FREQ = 100_000,
+    parameter bit MODE_16BIT = 0,
+    localparam int c_addr_w = (MODE_16BIT) ? 16 : 8,
+    localparam int c_data_w = (MODE_16BIT) ? 16 : 8,
+    localparam int c_burst_w =
+        (MODE_16BIT) ? BURST_WIDTH_16b : BURST_WIDTH
+
 ) (
     input  logic i_clk,
     input  logic i_rst,
@@ -19,14 +31,14 @@ module i2c_master #(
     input  logic i_we,
     input  logic i_sccb_mode,
     input  logic [6:0] i_addr_slave,
-    input  logic [7:0] i_addr_reg, // TODO: Update to support 16bit addresses and more
-    input  logic [BURST_WIDTH-1:0] i_burst_num,
+    input  logic [c_addr_w-1:0] i_addr_reg,
+    input  logic [c_burst_w-1:0] i_burst_num,
     output logic o_ready,
 
     //From Write Data FIFO
-    input  logic       i_wr_fifo_valid,
-    input  logic [7:0] i_wr_fifo_data,
-    output logic       o_wr_fifo_ready,
+    input  logic                i_wr_fifo_valid,
+    input  logic [c_data_w-1:0] i_wr_fifo_data,
+    output logic                o_wr_fifo_ready,
 
     //From Read Data FIFO
     output logic       o_rd_fifo_valid,
@@ -115,45 +127,89 @@ module i2c_master #(
         end
     end
 
-    i2c_req_manager_8bit #(
-        .BURST_WIDTH (BURST_WIDTH)
-    ) inst_i2c_req_manager (
-        .i_clk             (i_clk),
-        .i_rst             (i_rst),
-        .i_enable          (i_enable),
-        .i_valid           (i_valid),
-        .i_we              (i_we),
-        .i_sccb_mode       (i_sccb_mode),
-        .i_addr_slave      (i_addr_slave),
-        .i_addr_reg        (i_addr_reg),
-        .i_burst_num       (i_burst_num),
+    generate
+    if (MODE_16BIT) begin : gen_16bit_i2c_req_manager
+        i2c_req_manager_16bit #(
+            .BURST_WIDTH (c_burst_w)
+        ) inst_i2c_req_manager (
+            .i_clk             (i_clk),
+            .i_rst             (i_rst),
+            .i_enable          (i_enable),
+            .i_valid           (i_valid),
+            .i_we              (i_we),
+            .i_sccb_mode       (i_sccb_mode),
+            .i_addr_slave      (i_addr_slave),
+            .i_addr_reg        (i_addr_reg),
+            .i_burst_num       (i_burst_num),
 
-        .o_ready           (o_ready),
+            .o_ready           (o_ready),
 
-        .i_valid_wr_byte   (i_wr_fifo_valid),
-        .i_wr_byte         (i_wr_fifo_data),
-        .o_ready_wr_byte   (o_wr_fifo_ready),
+            .i_valid_wr_byte   (i_wr_fifo_valid),
+            .i_wr_byte         (i_wr_fifo_data),
+            .o_ready_wr_byte   (o_wr_fifo_ready),
 
-        .i_ready_rd_byte   (i_rd_fifo_ready),
+            .i_ready_rd_byte   (i_rd_fifo_ready),
 
-        .i_byte_ready      (s_byte_req_ready),
-        .i_wr_ack          (s_byte_wr_ack),
-        .i_wr_nack         (s_byte_wr_nack),
-        .i_rd_valid        (s_byte_rd_valid),
+            .i_byte_ready      (s_byte_req_ready),
+            .i_wr_ack          (s_byte_wr_ack),
+            .i_wr_nack         (s_byte_wr_nack),
+            .i_rd_valid        (s_byte_rd_valid),
 
-        .i_start_ready     (s_start_ready),
-        .i_start_done      (s_start_done),
-        .i_stop_ready      (s_stop_ready),
-        .i_stop_done       (s_stop_done),
+            .i_start_ready     (s_start_ready),
+            .i_start_done      (s_start_done),
+            .i_stop_ready      (s_stop_ready),
+            .i_stop_done       (s_stop_done),
 
-        .o_active_gen      (s_active_gen),
-        .o_active_gen_next (s_active_gen_next),
+            .o_active_gen      (s_active_gen),
+            .o_active_gen_next (s_active_gen_next),
 
-        .o_req_valid       (s_req_valid),
-        .o_req_we          (s_req_we),
-        .o_req_last_byte   (s_req_last_byte),
-        .o_wr_byte         (s_req_wr_byte)
-    );
+            .o_req_valid       (s_req_valid),
+            .o_req_we          (s_req_we),
+            .o_req_last_byte   (s_req_last_byte),
+            .o_wr_byte         (s_req_wr_byte)
+        );
+    end else begin : gen_8bit_i2c_req_manager
+        i2c_req_manager_8bit #(
+            .BURST_WIDTH (c_burst_w)
+        ) inst_i2c_req_manager (
+            .i_clk             (i_clk),
+            .i_rst             (i_rst),
+            .i_enable          (i_enable),
+            .i_valid           (i_valid),
+            .i_we              (i_we),
+            .i_sccb_mode       (i_sccb_mode),
+            .i_addr_slave      (i_addr_slave),
+            .i_addr_reg        (i_addr_reg),
+            .i_burst_num       (i_burst_num),
+
+            .o_ready           (o_ready),
+
+            .i_valid_wr_byte   (i_wr_fifo_valid),
+            .i_wr_byte         (i_wr_fifo_data),
+            .o_ready_wr_byte   (o_wr_fifo_ready),
+
+            .i_ready_rd_byte   (i_rd_fifo_ready),
+
+            .i_byte_ready      (s_byte_req_ready),
+            .i_wr_ack          (s_byte_wr_ack),
+            .i_wr_nack         (s_byte_wr_nack),
+            .i_rd_valid        (s_byte_rd_valid),
+
+            .i_start_ready     (s_start_ready),
+            .i_start_done      (s_start_done),
+            .i_stop_ready      (s_stop_ready),
+            .i_stop_done       (s_stop_done),
+
+            .o_active_gen      (s_active_gen),
+            .o_active_gen_next (s_active_gen_next),
+
+            .o_req_valid       (s_req_valid),
+            .o_req_we          (s_req_we),
+            .o_req_last_byte   (s_req_last_byte),
+            .o_wr_byte         (s_req_wr_byte)
+        );
+    end
+    endgenerate
 
     i2c_start_gen #(
         .CLK_FREQ (CLK_FREQ),

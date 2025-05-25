@@ -2,7 +2,11 @@
 `timescale 1ns / 1ps
 /* verilator lint_off WIDTHEXPAND */
 
-import package_i2c::*;
+import package_i2c::t_gen_states;
+import package_i2c::NONE;
+import package_i2c::START;
+import package_i2c::BYTE;
+import package_i2c::STOP;
 
 module i2c_req_manager_8bit #(
     parameter int BURST_WIDTH = 4
@@ -18,7 +22,7 @@ module i2c_req_manager_8bit #(
     input  logic i_we,
     input  logic i_sccb_mode,
     input  logic [6:0] i_addr_slave,
-    input  logic [7:0] i_addr_reg, // TODO: Update to support 16bit addresses and more
+    input  logic [7:0] i_addr_reg,
     input  logic [BURST_WIDTH-1:0] i_burst_num,
     output logic o_ready,
 

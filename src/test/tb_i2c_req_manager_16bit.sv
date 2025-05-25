@@ -705,6 +705,8 @@ module tb_i2c_req_manager_16bit();
         i_stop_ready = 1;
         wait_cycles(1);
         i_valid = 0;
+        i_addr_slave = 0;
+        i_addr_reg = 0;
         `WAIT(o_req_valid);
         `ASSERT(o_active_gen == START)
         wait_cycles(4);

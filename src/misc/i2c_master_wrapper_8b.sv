@@ -1,9 +1,9 @@
 `default_nettype none
 `timescale 1ns / 1ps
 /* verilator lint_off WIDTHEXPAND */
-import package_i2c::*;
+import package_i2c::t_i2c_cmd;
 
-module i2c_master_wrapper #(
+module i2c_master_wrapper_8b #(
     parameter bit CMD_FIFO = 1'b1,
     parameter bit WR_FIFO = 1'b1,
     parameter bit RD_FIFO = 1'b1
@@ -117,7 +117,7 @@ module i2c_master_wrapper #(
     endgenerate
 
     i2c_master #(
-        .BURST_WIDTH (BURST_WIDTH),
+        // .BURST_WIDTH (BURST_WIDTH),
         .CLK_FREQ    (CLK_FREQ),
         .I2C_FREQ    (I2C_FREQ)
     ) inst_i2c_master (

@@ -6,14 +6,14 @@
 `include "i2c_bit_gen.sv"
 `include "i2c_start_gen.sv"
 `include "i2c_stop_gen.sv"
-`include "i2c_req_manager.sv"
+`include "i2c_req_manager_16bit.sv"
+`include "i2c_req_manager_8bit.sv"
 `timescale 1 ns / 100 ps
 
 module tb_i2c_master();
 
     `SVUT_SETUP
 
-    parameter int BURST_WIDTH = 4;
     parameter int CLK_FREQ = 25_000_000;
     parameter int I2C_FREQ = 100_0000;
 
@@ -25,7 +25,7 @@ module tb_i2c_master();
     logic i_we;
     logic i_sccb_mode;
     logic [6:0] i_addr_slave;
-    logic [7:0] i_addr_reg;
+    logic [15:0] i_addr_reg;
     logic [BURST_WIDTH-1:0] i_burst_num;
     logic o_ready;
     logic       i_wr_fifo_valid;
@@ -45,9 +45,9 @@ module tb_i2c_master();
 
     i2c_master 
     #(
-    .BURST_WIDTH (BURST_WIDTH),
     .CLK_FREQ    (CLK_FREQ),
-    .I2C_FREQ    (I2C_FREQ)
+    .I2C_FREQ    (I2C_FREQ),
+    .MODE_16BIT ( 1'b1)
     )
     dut 
     (
@@ -139,9 +139,9 @@ module tb_i2c_master();
         i_enable = 1;
         i_we = 0;
         i_sccb_mode = 1;
-        i_addr_slave = 'h0;
-        i_addr_reg = 'h0f;
-        i_burst_num = 0;
+        i_addr_slave = 'hA0;
+        i_addr_reg = 'hF00f;
+        i_burst_num = 63;
         i_wr_fifo_data = 'hcd;
         i_wr_fifo_valid = 1;
         i_rd_fifo_ready = 1;
@@ -152,7 +152,7 @@ module tb_i2c_master();
                     `WAIT(~o_ready);
                     wait_cycles(1);
                     // i_valid = 0;
-                    i_we = ~i_we;
+                    // i_we = ~i_we;
                     `WAIT(o_ready);
                     wait_cycles(1);
                 end

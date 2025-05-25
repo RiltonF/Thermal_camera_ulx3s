@@ -2,7 +2,12 @@
 `timescale 1ns / 1ps
 /* verilator lint_off WIDTHEXPAND */
 
-import package_i2c::*;
+import package_i2c::t_gen_states;
+import package_i2c::NONE;
+import package_i2c::START;
+import package_i2c::BYTE;
+import package_i2c::STOP;
+
 
 module i2c_req_manager_16bit #(
     parameter int BURST_WIDTH = 4
@@ -138,7 +143,7 @@ module i2c_req_manager_16bit #(
     assign o_req_last_byte = s_r.last_byte;
     //first three bytes are writes, slave addr and reg addr MSB+LSB
     assign o_req_we =
-        (s_r.byte_counter >= 3) ? s_r.write_en : 1'b1;
+        (s_r.byte_counter >= 4) ? s_r.write_en : 1'b1;
     //pop the write data
     assign o_ready_wr_byte = (s_r.state == REQ_GEN)
                            & (s_r.byte_counter >= 'd3) //Slave(8b)+reg(16b)
@@ -211,7 +216,7 @@ module i2c_req_manager_16bit #(
                                     //Wait for rd ready
                                     s_r_next.state = t_states'((i_ready_rd_byte) ? INIT_GEN : REQ_CONTROL);
                                     s_r_next.last_byte = s_r.byte_counter >= (s_r.burst_num + 'd3 + 'd1);
-                                    if (s_r.byte_counter == 'd2) begin
+                                    if (s_r.byte_counter == 'd3) begin
                                         s_r_next.req_byte = {s_r.addr_slave, 1'b1}; // Reading mode on bus
                                     end else begin
                                         s_r_next.req_byte = '0;
@@ -256,6 +261,7 @@ module i2c_req_manager_16bit #(
                     end
                     BYTE: begin
                         v_done = i_wr_ack | i_wr_nack | i_rd_valid;
+                        s_r_next.wr_ack = i_wr_ack;
                     end
                     STOP: begin
                         v_done = i_stop_done;
@@ -264,7 +270,6 @@ module i2c_req_manager_16bit #(
                 endcase
                 if (v_done) begin
                     s_r_next.state = END_GEN;
-                    s_r_next.wr_ack = i_wr_ack;
                 end
             end
             END_GEN: begin
@@ -272,8 +277,8 @@ module i2c_req_manager_16bit #(
                 case (s_r.active_gen)
                     START: s_r_next.active_gen_next = BYTE;
                     STOP: begin
-                        s_r_next.active_gen_next =
-                            t_gen_states'((s_r.last_byte) ? NONE : START);
+                        s_r_next.active_gen_next = 
+                            t_gen_states'((s_r.last_byte|~s_r.wr_ack) ? NONE : START);
                     end
                     BYTE: begin
                         s_r_next.byte_counter++; //increment byte counter after req
