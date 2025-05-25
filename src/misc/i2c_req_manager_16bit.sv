@@ -4,7 +4,7 @@
 
 import package_i2c::*;
 
-module i2c_req_manager #(
+module i2c_req_manager_16bit #(
     parameter int BURST_WIDTH = 4
 ) (
     input  logic i_clk,
@@ -16,15 +16,22 @@ module i2c_req_manager #(
     //From CMD FIFO
     input  logic i_valid,
     input  logic i_we,
+    // NOTE: Sccb mode may require only 8 bits of data for some slaves.
+    // Currently only 16 bit data is supported.
+    // Check your data sheet of slave that the extra 8 lsb bits don't
+    // increment and overwrite the the next address.
+    // TODO: ADD suport for sccb 8 bit data mode with 16bit reg addr
     input  logic i_sccb_mode,
     input  logic [6:0] i_addr_slave,
-    input  logic [7:0] i_addr_reg, // TODO: Update to support 16bit addresses and more
+    input  logic [15:0] i_addr_reg,
+    // Burst num is the number of words, in this case 16b.
+    // Total data is 1+i_burst_num
     input  logic [BURST_WIDTH-1:0] i_burst_num,
     output logic o_ready,
 
     //From WR Byte FIFO
     input  logic i_valid_wr_byte,
-    input  logic [7:0] i_wr_byte,
+    input  logic [15:0] i_wr_byte,
     output logic o_ready_wr_byte,
 
     //From RD Byte FIFO
@@ -70,10 +77,10 @@ module i2c_req_manager #(
         logic sccb_mode;
         logic wr_ack;
         logic [6:0] addr_slave;
-        logic [7:0] addr_reg;
+        logic [15:0] addr_reg;
         logic [7:0] req_byte;
-        logic [BURST_WIDTH-1:0] burst_num;
-        logic [BURST_WIDTH-1:0] byte_counter;
+        logic [BURST_WIDTH:0] burst_num;
+        logic [BURST_WIDTH:0] byte_counter;
         logic last_byte;
     } t_control;
 
@@ -101,10 +108,10 @@ module i2c_req_manager #(
         logic d_sccb_mode;
         logic d_wr_ack;
         logic [6:0] d_addr_slave;
-        logic [7:0] d_addr_reg;
+        logic [15:0] d_addr_reg;
         logic [7:0] d_req_byte;
-        logic [BURST_WIDTH-1:0] d_burst_num;
-        logic [BURST_WIDTH-1:0] d_byte_counter;
+        logic [BURST_WIDTH:0] d_burst_num;
+        logic [BURST_WIDTH:0] d_byte_counter;
         logic d_last_byte;
         assign d_state = s_r.state;
         assign d_active_gen = s_r.active_gen;
@@ -129,12 +136,13 @@ module i2c_req_manager #(
     assign o_active_gen_next = s_r.active_gen_next;
     assign o_req_valid = (s_r.state == REQ_GEN);
     assign o_req_last_byte = s_r.last_byte;
-    //first two bytes are writes, slave addr and reg addr
+    //first three bytes are writes, slave addr and reg addr MSB+LSB
     assign o_req_we =
         (s_r.byte_counter >= 3) ? s_r.write_en : 1'b1;
-    //pop the read data
+    //pop the write data
     assign o_ready_wr_byte = (s_r.state == REQ_GEN)
-                           & (s_r.byte_counter >= 'd2)
+                           & (s_r.byte_counter >= 'd3) //Slave(8b)+reg(16b)
+                           & (s_r.byte_counter[0] == 1'b0) //When lsb is written
                            & (s_r.active_gen == BYTE)
                            & (s_r.write_en);
 
@@ -156,7 +164,9 @@ module i2c_req_manager #(
                     s_r_next.addr_reg = i_addr_reg;
                     s_r_next.wr_ack = '0;
                     //Set to 0 if in sscb mode, no bursts allowed
-                    s_r_next.burst_num = (i_sccb_mode) ? '0 : i_burst_num;
+                    //Burst is represented as bytes. For single 16 bit data
+                    //it's 2 words, (2-1)=1 since we start counting with 0.
+                    s_r_next.burst_num = (i_sccb_mode) ? 'd1 : (i_burst_num<<1)+1'b1;
                     s_r_next.byte_counter = '0;
                     s_r_next.last_byte = '0;
                     s_r_next.active_gen_next = START;
@@ -181,25 +191,30 @@ module i2c_req_manager #(
                             'd0: begin
                                 s_r_next.req_byte = {s_r.addr_slave, 1'b0}; //We're writing the slave addr
                             end
-                            //Write the register address, (surrently only 8 bit support)
+                            //Write the MSB register address
                             'd1: begin
-                                s_r_next.req_byte = s_r.addr_reg;
+                                s_r_next.req_byte = s_r.addr_reg[15:8]; //MSB first
+                            end
+                            //Write the LSB register address
+                            'd2: begin
+                                s_r_next.req_byte = s_r.addr_reg[7:0]; //LSB second
                             end
                             //Reads or writes
                             default: begin
                                 if (s_r.write_en) begin
                                     //Wait for wr valid
                                     s_r_next.state = t_states'((i_valid_wr_byte) ? INIT_GEN : REQ_CONTROL);
-                                    s_r_next.req_byte = i_wr_byte;
-                                    s_r_next.last_byte = s_r.byte_counter >= (s_r.burst_num + 'd2);
+                                    //Since payload data starts from byte count 3, if count is odd, send msb, otherwise lsb.
+                                    s_r_next.req_byte = (s_r.byte_counter[0]) ? i_wr_byte[15:8] : i_wr_byte[7:0];
+                                    s_r_next.last_byte = s_r.byte_counter >= (s_r.burst_num + 'd3);
                                 end else begin
                                     //Wait for rd ready
                                     s_r_next.state = t_states'((i_ready_rd_byte) ? INIT_GEN : REQ_CONTROL);
-                                    s_r_next.last_byte = s_r.byte_counter >= (s_r.burst_num + 'd2 + 'd1);
+                                    s_r_next.last_byte = s_r.byte_counter >= (s_r.burst_num + 'd3 + 'd1);
                                     if (s_r.byte_counter == 'd2) begin
                                         s_r_next.req_byte = {s_r.addr_slave, 1'b1}; // Reading mode on bus
                                     end else begin
-                                        s_r_next.req_byte = '0; 
+                                        s_r_next.req_byte = '0;
                                     end
                                 end
                             end
@@ -268,7 +283,12 @@ module i2c_req_manager #(
                                 s_r_next.active_gen_next =
                                     t_gen_states'((s_r.wr_ack) ? BYTE : STOP);
                             end
-                            'd1: begin //Reg addr byte
+                            'd1: begin //Reg MSB addr byte
+                                //Slave should ack back
+                                s_r_next.active_gen_next =
+                                    t_gen_states'((s_r.wr_ack) ? BYTE : STOP);
+                            end
+                            'd2: begin //Reg LSB addr byte
                                 //Slave should ack back, even in sccb mode
                                 if (s_r.wr_ack) begin
                                     if (s_r.write_en) begin
@@ -293,20 +313,6 @@ module i2c_req_manager #(
                                     end
                                 end else begin
                                 end
-                                // if (s_r.sccb_mode) begin //No bursts allowed
-                                //     s_r_next.active_gen_next = STOP;
-                                // end else begin
-                                //     if (s_r.last_byte) begin
-                                //         //decide to repeat start or stop req
-                                //         if (i_valid) begin
-                                //             s_r_next.active_gen_next = START;
-                                //             s_r_next.state = REQ_LOAD;
-                                //         end else begin
-                                //             s_r_next.active_gen_next = STOP;
-                                //             s_r_next.state = REQ_CONTROL;
-                                //         end
-                                //     end
-                                // end
                             end
                         endcase
                     end

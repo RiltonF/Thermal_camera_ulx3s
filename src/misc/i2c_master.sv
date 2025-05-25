@@ -115,7 +115,7 @@ module i2c_master #(
         end
     end
 
-    i2c_req_manager #(
+    i2c_req_manager_8bit #(
         .BURST_WIDTH (BURST_WIDTH)
     ) inst_i2c_req_manager (
         .i_clk             (i_clk),

@@ -1,0 +1,77 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Sun May 25 14:21:18 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Sun May 25 14:20:12 2025"
+[dumpfile_size] 4441
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_i2c_req_manager_16bit.gtkw"
+[timestart] 3421000
+[size] 2560 1358
+[pos] -1 -1
+*-17.670351 5030000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_i2c_req_manager_16bit.
+[sst_width] 274
+[signals_width] 327
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@420
+tb_i2c_req_manager_16bit.dut.BURST_WIDTH
+tb_i2c_req_manager_16bit.dut.c_control_reset
+@22
+tb_i2c_req_manager_16bit.dut.d_active_gen[31:0]
+tb_i2c_req_manager_16bit.dut.d_active_gen_next[31:0]
+tb_i2c_req_manager_16bit.dut.d_addr_reg[15:0]
+tb_i2c_req_manager_16bit.dut.d_addr_slave[6:0]
+@28
+tb_i2c_req_manager_16bit.dut.d_last_byte
+@24
+tb_i2c_req_manager_16bit.dut.d_burst_num[4:0]
+tb_i2c_req_manager_16bit.dut.d_byte_counter[4:0]
+@22
+tb_i2c_req_manager_16bit.dut.d_req_byte[7:0]
+@28
+tb_i2c_req_manager_16bit.dut.d_sccb_mode
+@22
+tb_i2c_req_manager_16bit.dut.d_state[31:0]
+@28
+tb_i2c_req_manager_16bit.dut.d_wr_ack
+tb_i2c_req_manager_16bit.dut.d_write_en
+tb_i2c_req_manager_16bit.dut.i_clk
+tb_i2c_req_manager_16bit.dut.i_rst
+tb_i2c_req_manager_16bit.dut.i_enable
+@22
+tb_i2c_req_manager_16bit.dut.i_addr_reg[15:0]
+tb_i2c_req_manager_16bit.dut.i_addr_slave[6:0]
+tb_i2c_req_manager_16bit.dut.i_burst_num[3:0]
+@28
+tb_i2c_req_manager_16bit.dut.i_byte_ready
+tb_i2c_req_manager_16bit.dut.i_ready_rd_byte
+tb_i2c_req_manager_16bit.dut.i_sccb_mode
+tb_i2c_req_manager_16bit.dut.i_start_done
+tb_i2c_req_manager_16bit.dut.i_start_ready
+tb_i2c_req_manager_16bit.dut.i_stop_done
+tb_i2c_req_manager_16bit.dut.i_stop_ready
+tb_i2c_req_manager_16bit.dut.o_ready
+tb_i2c_req_manager_16bit.dut.i_valid
+tb_i2c_req_manager_16bit.dut.i_we
+@29
+tb_i2c_req_manager_16bit.dut.i_rd_valid
+@28
+tb_i2c_req_manager_16bit.dut.i_wr_nack
+tb_i2c_req_manager_16bit.dut.i_wr_ack
+tb_i2c_req_manager_16bit.dut.o_ready_wr_byte
+tb_i2c_req_manager_16bit.dut.i_valid_wr_byte
+@22
+tb_i2c_req_manager_16bit.dut.i_wr_byte[15:0]
+@24
+tb_i2c_req_manager_16bit.dut.o_active_gen[31:0]
+tb_i2c_req_manager_16bit.dut.o_active_gen_next[31:0]
+@28
+tb_i2c_req_manager_16bit.dut.o_req_valid
+tb_i2c_req_manager_16bit.dut.o_req_we
+tb_i2c_req_manager_16bit.dut.o_req_last_byte
+@22
+tb_i2c_req_manager_16bit.dut.o_wr_byte[7:0]
+[pattern_trace] 1
+[pattern_trace] 0
