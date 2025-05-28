@@ -13,7 +13,7 @@ module top #(
     output logic [7:0] led,
     output logic [3:0] gpdi_dp,
 
-    inout gp0,gn0, //I2C Pins
+    inout wire gp0,gn0, //I2C Pins
     input gp1,gp2,gp3,gp4,gp5,gp6,
     input gn1,    gn3,gn4,gn5,gn6,
     output    gn2, //clock in to cam
@@ -25,6 +25,10 @@ module top #(
     output gn27,gp27
     
 );
+    //unsupported by verilator :/
+    // alias sda = gn0;
+    // alias scl = gp0;
+
     logic s_clk_pixel, s_clk_shift, s_clk_sys;
     logic s_rst;
     logic [6:0] s_btn_trig;
@@ -36,8 +40,7 @@ module top #(
     // assign o_data = 
     //   '{we:s_btn_trig[4]|s_btn_trig[6], sccb_mode:1, addr_slave:'h21, addr_reg:'h1E, burst_num:'d0}; 
 
-    assign gn27 = s_btn_trig[4];
-    assign gp27 = btn[4];
+    assign gn27 = led[7];
 
     logic s_cmd_valid, s_cmd_ready;
     t_i2c_cmd s_cmd_data;
@@ -68,7 +71,7 @@ module top #(
       .data(s_rom_data)
     );
 
-    i2c_master_wrapper_8b #(.CMD_FIFO(0)) inst_i2c_master_wrapper (
+    i2c_master_wrapper_8b #(.CMD_FIFO(0)) inst_i2c_master_8b_wrapper (
       .i_clk(s_clk_sys),
       .i_rst(s_rst),
       .i_enable(1'b1),
@@ -91,33 +94,31 @@ module top #(
       // .b_scl(s_camera.scl)
     );
 
-    t_i2c_cmd_16b cmd_data;
-    assign cmd_data = 
-      '{we:1'b0, sccb_mode:1'b0, addr_slave:'h33, addr_reg:'h0400, burst_num:'d767}; 
-      // '{we:1'b0, sccb_mode:1'b0, addr_slave:'h33, addr_reg:'h8000, burst_num:'d0}; 
+    //--------------------------------------------------------------------------------
+    //MLX TOP
+    //--------------------------------------------------------------------------------
+    localparam c_mlx_addrw = $clog2(32*24+64);
+    logic                   i_fb_rd_valid;
+    logic [c_mlx_addrw-1:0] i_fb_rd_addr;
+    logic            [16:0] o_fb_rd_data;
 
-    i2c_master_wrapper_16b #(.CMD_FIFO(0)) inst_i2c_master_mlx(
+    logic signed [16-1:0] vga_x_pos;
+    logic signed [16-1:0] vga_y_pos;
+
+    mlx90640_top #(
+      // .p_delay_const()
+    ) inst_mlx (
       .i_clk(s_clk_sys),
       .i_rst(s_rst),
-      .i_enable(1'b1),
-
-      .i_cmd_fifo_valid(s_btn_trig[6]),
-      .i_cmd_fifo_data(cmd_data),
-      .o_cmd_fifo_ready(),
-
-      .i_wr_fifo_valid(0),
-      .i_wr_fifo_data(0),
-      .o_wr_fifo_ready(),
-
-      .o_rd_fifo_valid(led[0]),
-      .o_rd_fifo_data(led[7:1]),
-      .i_rd_fifo_ready(1'b1),
-
+      .i_trig(s_btn_trig[6]),
+      .o_debug(led),
+      .i_fb_rd_valid,
+      .i_fb_rd_addr,
+      .o_fb_rd_data,
       .b_sda(gn0),
       .b_scl(gp0)
-      // .b_sda(s_camera.sda),
-      // .b_scl(s_camera.scl)
     );
+
 
     //CAMERA -------------------------------------------------------
     //camera inputs
@@ -193,13 +194,39 @@ module top #(
       .o_vsync (s_vsync),
       .o_de(s_de),
       // .led(led),
+      .vga_x_pos,
+      .vga_y_pos,
       .i_toggle(s_btn_trig[3]),
       .o_data(s_colors)
     );
 
-    assign s_colors3[0] = s_colors[0];
-    assign s_colors3[1] = s_colors[1];
-    assign s_colors3[2] = s_colors[2];
+    // assign s_colors3[0] = s_colors[0];
+    // assign s_colors3[1] = s_colors[1];
+    // assign s_colors3[2] = s_colors[2];
+    // assign s_colors3[0] = o_fb_rd_data>>1;
+    // assign s_colors3[1] = o_fb_rd_data>>1;
+    // assign s_colors3[2] = o_fb_rd_data>>1;
+
+    // assign i_fb_rd_addr = vga_x_pos/20 + vga_y_pos/20;
+    // assign i_fb_rd_valid = 1'b1;
+    always_comb begin
+      logic [15:0] v_x_pos, v_y_pos;
+      v_x_pos = vga_x_pos>>3;
+      v_y_pos = vga_y_pos>>3;
+
+      i_fb_rd_addr = v_y_pos*'d32 + v_x_pos;
+      i_fb_rd_valid = 1'b1;
+
+      if ((v_x_pos < 32) & (v_y_pos < 24)) begin
+        s_colors3[0] = o_fb_rd_data>>1;
+        s_colors3[1] = o_fb_rd_data>>1;
+        s_colors3[2] = o_fb_rd_data>>1;
+      end else begin
+        s_colors3[0] = s_colors[0];
+        s_colors3[1] = s_colors[1];
+        s_colors3[2] = s_colors[2];
+      end
+    end
 
     //assign the pixel clock to output
     assign gpdi_dp[3] = s_clk_pixel;

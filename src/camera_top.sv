@@ -23,10 +23,12 @@ module camera_top #(
     output logic o_vsync,
     input logic i_toggle,
     output [7:0]led,
+    output logic signed [p_count_width-1:0] vga_x_pos,
+    output logic signed [p_count_width-1:0] vga_y_pos,
     output logic [7:0] o_data [3] // RGB data
 );
-    logic signed [p_count_width-1:0] vga_x_pos;
-    logic signed [p_count_width-1:0] vga_y_pos;
+    // logic signed [p_count_width-1:0] vga_x_pos;
+    // logic signed [p_count_width-1:0] vga_y_pos;
 
     logic [1:0] s_switch;
     logic                  s_fb_wr_valid;
