@@ -1,0 +1,114 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Tue May 27 14:12:57 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Tue May 27 14:12:08 2025"
+[dumpfile_size] 2334
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_mlx90640_controller.gtkw"
+[timestart] 0
+[size] 2560 1358
+[pos] -1 -1
+*-18.374514 2235200 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_mlx90640_controller.
+[sst_width] 274
+[signals_width] 313
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@420
+tb_mlx90640_controller.dut.c_control_register
+tb_mlx90640_controller.dut.c_ram_read_words
+tb_mlx90640_controller.dut.c_ram_start_addr
+tb_mlx90640_controller.dut.c_signals_reset
+tb_mlx90640_controller.dut.c_status_register
+tb_mlx90640_controller.dut.c_status_reset_val
+tb_mlx90640_controller.dut.p_delay_const
+@28
+tb_mlx90640_controller.dut.p_sccb_mode
+@420
+tb_mlx90640_controller.dut.p_slave_addr
+@28
+tb_mlx90640_controller.dut.d_ack
+@22
+tb_mlx90640_controller.dut.d_cmd_data[34:0]
+@24
+tb_mlx90640_controller.dut.d_cmd_type[31:0]
+@22
+tb_mlx90640_controller.dut.d_delay_timer[24:0]
+@28
+tb_mlx90640_controller.dut.d_done
+tb_mlx90640_controller.dut.d_init
+@22
+tb_mlx90640_controller.dut.d_read_data[15:0]
+@24
+tb_mlx90640_controller.dut.d_state[31:0]
+@22
+tb_mlx90640_controller.dut.d_write_data[15:0]
+@28
+tb_mlx90640_controller.dut.i_clk
+tb_mlx90640_controller.dut.i_rst
+@200
+-
+@28
+tb_mlx90640_controller.dut.i_start
+@200
+-
+@28
+tb_mlx90640_controller.dut.i_cmd_ready
+tb_mlx90640_controller.dut.o_cmd_valid
+@c00022
+tb_mlx90640_controller.dut.o_cmd_data[34:0]
+@28
+(0)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(1)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(2)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(3)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(5)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(6)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(7)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(8)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(9)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(10)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(11)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(12)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(13)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(14)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(15)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(16)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(17)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(18)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(19)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(20)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(21)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(22)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(23)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(24)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(25)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(26)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(27)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(28)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(29)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(30)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(31)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(32)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(33)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+(34)tb_mlx90640_controller.dut.o_cmd_data[34:0]
+@1401200
+-group_end
+@29
+tb_mlx90640_controller.dut.i_cmd_ack
+@200
+-
+@28
+tb_mlx90640_controller.dut.o_wr_fifo_valid
+@22
+tb_mlx90640_controller.dut.o_wr_fifo_data[15:0]
+@200
+-
+@28
+tb_mlx90640_controller.dut.o_rd_fifo_ready
+tb_mlx90640_controller.dut.i_rd_fifo_valid
+@22
+tb_mlx90640_controller.dut.i_rd_fifo_data[15:0]
+[pattern_trace] 1
+[pattern_trace] 0
