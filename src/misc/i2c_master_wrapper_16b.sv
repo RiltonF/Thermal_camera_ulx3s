@@ -6,7 +6,9 @@ import package_i2c::t_i2c_cmd_16b;
 module i2c_master_wrapper_16b #(
     parameter bit CMD_FIFO = 1'b1,
     parameter bit WR_FIFO = 1'b1,
-    parameter bit RD_FIFO = 1'b1
+    parameter bit RD_FIFO = 1'b1,
+    parameter int CLK_FREQ = 25_000_000,
+    parameter int I2C_FREQ = 100_000
 )(
     input  logic i_clk,
     input  logic i_rst,
@@ -17,6 +19,7 @@ module i2c_master_wrapper_16b #(
     input  logic         i_cmd_fifo_valid,
     input  t_i2c_cmd_16b i_cmd_fifo_data,
     output logic         o_cmd_fifo_ready,
+    output logic         o_cmd_ack,
 
     //WR Data interface
     input  logic        i_wr_fifo_valid,
@@ -32,9 +35,6 @@ module i2c_master_wrapper_16b #(
     inout logic b_sda,
     inout logic b_scl
 );
-    localparam int CLK_FREQ = 25_000_000;
-    localparam int I2C_FREQ = 100_000;
-
     // CMD FIFO
     logic s_cmd_valid, s_cmd_ready;
     t_i2c_cmd_16b s_cmd_data;
@@ -132,6 +132,7 @@ module i2c_master_wrapper_16b #(
         .i_addr_reg      (s_cmd_data.addr_reg),
         .i_burst_num     (s_cmd_data.burst_num),
         .o_ready         (s_cmd_ready),
+        .o_cmd_ack       (o_cmd_ack),
         .i_wr_fifo_valid (s_write_valid),
         .i_wr_fifo_data  (s_write_data),
         .o_wr_fifo_ready (s_write_ready),

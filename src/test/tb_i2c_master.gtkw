@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sun May 25 18:01:16 2025
+[*] Sun May 25 20:38:40 2025
 [*]
 [dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
-[dumpfile_mtime] "Sun May 25 17:48:21 2025"
-[dumpfile_size] 9342
+[dumpfile_mtime] "Sun May 25 18:01:20 2025"
+[dumpfile_size] 9629
 [savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_i2c_master.gtkw"
 [timestart] 0
 [size] 2560 1358
 [pos] -1 -1
-*-21.584391 11960000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-21.584391 12900000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_i2c_master.
 [treeopen] tb_i2c_master.dut.
 [treeopen] tb_i2c_master.dut.gen_16bit_i2c_req_manager.

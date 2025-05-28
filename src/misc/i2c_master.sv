@@ -35,6 +35,8 @@ module i2c_master #(
     input  logic [c_burst_w-1:0] i_burst_num,
     output logic o_ready,
 
+    output logic o_cmd_ack,
+
     //From Write Data FIFO
     input  logic                i_wr_fifo_valid,
     input  logic [c_data_w-1:0] i_wr_fifo_data,
@@ -55,6 +57,16 @@ module i2c_master #(
     logic s_byte_wr_nack;
     logic s_byte_rd_valid;
     assign s_byte_rd_valid = o_rd_fifo_valid;
+
+    always_ff @(posedge i_clk) begin
+        if (i_rst) begin
+            o_cmd_ack <= '0;
+        end else begin
+            if (s_byte_wr_ack | s_byte_wr_nack) begin
+                o_cmd_ack <= s_byte_wr_ack;
+            end
+        end
+    end
 
     //start_gen & stop_gen
     logic        s_start_ready;

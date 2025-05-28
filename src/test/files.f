@@ -1,7 +1,7 @@
 ../package_i2c.sv
 ../package_cam.sv
-+incdir+../
++incdir+../mem
 +incdir+../misc
 +incdir+../memory
-+incdir+../mem
++incdir+../
 +incdir+./
