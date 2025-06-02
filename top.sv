@@ -214,7 +214,8 @@ module top #(
       v_x_pos = vga_x_pos>>3;
       v_y_pos = vga_y_pos>>3;
 
-      i_fb_rd_addr = v_y_pos*'d32 + v_x_pos;
+      //32-x for v flip
+      i_fb_rd_addr = v_y_pos*'d32 + (32-v_x_pos);
       i_fb_rd_valid = 1'b1;
 
       if ((v_x_pos < 32) & (v_y_pos < 24)) begin
