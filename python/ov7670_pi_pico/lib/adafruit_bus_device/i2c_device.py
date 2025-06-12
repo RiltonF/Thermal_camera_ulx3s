@@ -111,7 +111,7 @@ class I2CDevice:
         in_end: Optional[int] = None
     ) -> None:
         """
-        Write the bytes from ``out_buffer`` to the device, then immediately
+       Write the bytes from ``out_buffer`` to the device, then immediately
         reads into ``in_buffer`` from the device. The number of bytes read
         will be the length of ``in_buffer``.
 

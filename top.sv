@@ -215,13 +215,14 @@ module top #(
       v_y_pos = vga_y_pos>>3;
 
       //32-x for v flip
-      i_fb_rd_addr = v_y_pos*'d32 + (32-v_x_pos);
+      // i_fb_rd_addr = v_y_pos*'d32 + (32-v_x_pos);
+      i_fb_rd_addr = v_y_pos*'d32 + (v_x_pos);
       i_fb_rd_valid = 1'b1;
 
       if ((v_x_pos < 32) & (v_y_pos < 24)) begin
-        s_colors3[0] = o_fb_rd_data>>1;
-        s_colors3[1] = o_fb_rd_data>>1;
-        s_colors3[2] = o_fb_rd_data>>1;
+        s_colors3[0] = o_fb_rd_data;
+        s_colors3[1] = o_fb_rd_data;
+        s_colors3[2] = o_fb_rd_data;
       end else begin
         s_colors3[0] = s_colors[0];
         s_colors3[1] = s_colors[1];

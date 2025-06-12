@@ -21,10 +21,13 @@ module mlx90640_top #(
     inout logic b_scl
 );
     localparam c_ram_start_addr = 16'h0400;
+    localparam c_eeprom_start_addr = 16'h2400;
+
     typedef struct packed {
         logic [BURST_WIDTH_16b:0] words;
         logic page_number;
-        logic is_rom_data;
+        logic is_ram_data;
+        logic is_eeprom_data;
     } t_rd_log;
 
     logic        s_cmd_log_valid;
@@ -52,9 +55,9 @@ module mlx90640_top #(
 
     logic        s_page_number;
 
-    logic                   s_wr_fb_valid;
-    logic            [16:0] s_wr_fb_data;
-    logic [c_mlx_addrw-1:0] s_wr_fb_addr;
+    logic                   s_wr_eeprom_valid;
+    logic                   s_wr_ram_valid;
+
     //--------------------------------------------------------------------------------
     //MLX controller and I2C controller
     //--------------------------------------------------------------------------------
@@ -85,6 +88,7 @@ module mlx90640_top #(
     logic        s_rd_8b_ready;
 
     i2c_master_wrapper_16b #(
+        .I2C_FREQ(200_000), //TODO: fix this 
         .CMD_FIFO(0),
         .RD_FIFO(0),
         .WR_FIFO(1)
@@ -135,13 +139,15 @@ module mlx90640_top #(
         assign s_cmd_log_data = '{
             words: s_cmd_data.burst_num+1'b1,
             page_number: s_page_number,
-            is_rom_data: s_cmd_data.addr_reg == c_ram_start_addr
+            is_ram_data: s_cmd_data.addr_reg == c_ram_start_addr,
+            is_eeprom_data: s_cmd_data.addr_reg == c_eeprom_start_addr
         };
     `else
         assign s_cmd_log_data = '{
             s_cmd_data.burst_num+1'b1,
             s_page_number,
-            s_cmd_data.addr_reg == c_ram_start_addr
+            s_cmd_data.addr_reg == c_ram_start_addr,
+            s_cmd_data.addr_reg == c_eeprom_start_addr
             };
     `endif
 
@@ -164,11 +170,13 @@ module mlx90640_top #(
     // Read data arbiter
     //--------------------------------------------------------------------------------
     assign s_cmd_rd_fifo_valid =
-        s_rd_fifo_valid & s_rd_log_valid & ~s_rd_log_data.is_rom_data;
-    assign s_wr_fb_valid =
-        s_rd_fifo_valid & s_rd_log_valid & s_rd_log_data.is_rom_data;
+        s_rd_fifo_valid & s_rd_log_valid & ~s_rd_log_data.is_ram_data & ~s_rd_log_data.is_eeprom_data;
+    assign s_wr_ram_valid =
+        s_rd_fifo_valid & s_rd_log_valid & s_rd_log_data.is_ram_data & ~s_rd_log_data.is_eeprom_data;
+    assign s_wr_eeprom_valid =
+        s_rd_fifo_valid & s_rd_log_valid & ~s_rd_log_data.is_ram_data & s_rd_log_data.is_eeprom_data;
 
-    typedef enum {IDLE, STATUS_READ, ROM_READ} t_arb_states;
+    typedef enum {IDLE, STATUS_READ, OTHER_READ} t_arb_states;
 
     typedef struct packed {
         t_arb_states state;
@@ -198,7 +206,8 @@ module mlx90640_top #(
                 if (s_rd_log_valid) begin
                     s_r_next.word_counter = '0;
                     s_r_next.state = t_arb_states'(
-                        (s_rd_log_data.is_rom_data) ? ROM_READ : STATUS_READ);
+                        (s_rd_log_data.is_ram_data | s_rd_log_data.is_eeprom_data)
+                            ? OTHER_READ : STATUS_READ);
                 end
             end
             STATUS_READ: begin
@@ -208,7 +217,7 @@ module mlx90640_top #(
                     s_r_next.state = IDLE;
                 end
             end
-            ROM_READ: begin
+            OTHER_READ: begin
                 if (s_rd_fifo_valid) begin
                     s_r_next.word_counter++;
                     s_rd_fifo_ready <= 1'b1;
@@ -231,25 +240,118 @@ module mlx90640_top #(
     //--------------------------------------------------------------------------------
     // Frambuffer ram for MLX read data
     //--------------------------------------------------------------------------------
+    typedef struct packed {
+        logic signed [5:0] offset;
+        logic signed [5:0] alpha;
+        logic [2:0] kta;
+        logic       outlier;
+    } t_eeprom_data;
+    t_eeprom_data           s_eeprom_data;
 
-    assign s_wr_fb_data = {s_rd_fifo_data, s_rd_log_data.page_number};
-    assign s_wr_fb_addr = s_r.word_counter;
+    logic            [15:0] s_wr_read_data;
+    logic [c_mlx_addrw-1:0] s_wr_read_addr;
 
-    // assign o_debug = {s_wr_fb_valid, s_wr_fb_addr[6:0]};
-    assign o_debug = {i_fb_rd_valid, i_fb_rd_addr[6:0]};
+    logic                   s_pg0_valid, s_pg1_valid;
+    logic                   s_wr_fb_page_number;
+    logic                   s_wr_fb_valid;
+    logic                   s_wr_fb_valid_page;
+    logic signed     [15:0] s_wr_fb_data;
+    logic [c_mlx_addrw-1:0] s_wr_fb_addr;
+    logic            [15:0] s_wr_old_data;
 
+    assign s_wr_fb_valid_page = s_wr_fb_valid & ((s_wr_fb_page_number)? s_pg1_valid: s_pg0_valid);
+
+    assign s_wr_read_data = s_rd_fifo_data;
+    assign s_wr_read_addr = s_r.word_counter;
+
+    //Clock in valid data to give eeprom mem time to read data
+    always_ff @(posedge i_clk) begin
+        s_wr_fb_valid <= s_wr_ram_valid;
+        s_wr_fb_addr <= s_wr_read_addr;
+        s_wr_fb_data <= s_wr_read_data;
+        s_wr_fb_page_number <= s_rd_log_data.page_number;
+        //To be used for dead pixels
+        if (s_wr_fb_valid) s_wr_old_data <= s_wr_fb_data;
+    end
+
+    // NOTE: might need to add two read ports
     mu_ram_1r1w #(
-        .DW($bits(s_wr_fb_data)),
+        .DW($bits(s_wr_read_data)),
+        .AW(c_mlx_addrw)
+    ) inst_mlx_eeprom_dump_mem (
+        .clk(i_clk),
+        //Write interface
+        .we     (s_wr_eeprom_valid),
+        .waddr  (s_wr_read_addr),
+        .wr     (s_wr_read_data),
+        //Read interface
+        .re     (s_wr_ram_valid),
+        .raddr  (s_wr_read_addr + 'd64), //first 64 bits of eeprom is not pixel data
+        .rd     (s_eeprom_data)
+    );
+
+    assign o_debug = s_eeprom_data;
+
+    // NOTE: Change to memory with a read valid?
+    mlx90640_subpages_rom_sync inst_mlx_subpages_rom (
+        .clk(i_clk),
+        .addr(s_wr_read_addr),
+        .data_pg0(s_pg0_valid),
+        .data_pg1(s_pg1_valid)
+    );
+
+    //Raw data - offset from eeprom, offset data is sign extended
+    logic signed [15:0] s_norm_data, s_max_data, s_min_data, s_range_data;
+    logic signed [15:0] s_max_data_running, s_min_data_running;
+    assign s_norm_data = 
+        $signed(s_wr_fb_data) - $signed({{10{s_eeprom_data.offset[5]}}, s_eeprom_data.offset});
+
+    always_ff @(posedge i_clk) begin
+        if (s_wr_fb_valid_page) begin
+            if (s_wr_fb_addr == '0) begin
+                s_min_data <= s_norm_data;
+                s_max_data <= s_norm_data;
+                s_min_data_running <= s_min_data;
+                s_max_data_running <= s_max_data;
+                s_range_data <= ((s_max_data - s_min_data) == 0) ? 16'sb1 : s_max_data - s_min_data;
+            end else begin
+                s_min_data <= (s_norm_data < s_min_data) ? s_norm_data : s_min_data;
+                s_max_data <= (s_norm_data > s_max_data) ? s_norm_data : s_max_data;
+            end
+        end
+    end
+
+    logic                   s_fb_rd_valid;
+    logic signed     [15:0] s_fb_rd_data, s_fb_rd_data_1;
+    logic signed     [31:0] s_fb_rd_data_2, s_fb_rd_data_3;
+    logic [c_mlx_addrw-1:0] s_fb_rd_addr;
+    logic signed     [15:0] s_scale;
+
+    // always_ff @(posedge i_clk) s_fb_rd_data_1 <=(s_fb_rd_data - s_min_data_running);
+    // always_ff @(posedge i_clk) s_fb_rd_data_2 <= s_fb_rd_data_1 * 16'sd255;
+    // always_ff @(posedge i_clk) s_fb_rd_data_3 <= s_fb_rd_data_2 / s_range_data;
+    // always_ff @(posedge i_clk) s_fb_rd_data_1 <=(s_fb_rd_data - s_min_data_running);
+    // always_ff @(posedge i_clk) s_fb_rd_data_2 <= s_fb_rd_data_1 * 16'sd255;
+    // always_ff @(posedge i_clk) s_fb_rd_data_3 <= (8'd255 << 12)/ s_range_data;
+    // assign o_fb_rd_data = s_fb_rd_data_3;
+    assign o_fb_rd_data = s_fb_rd_data;
+
+    //Read pixel data from page pattern and eeprom data
+    mu_ram_1r1w #(
+        .DW($bits(s_wr_read_data)),
         .AW(c_mlx_addrw)
     ) inst_mlx_fb_mem (
         .clk(i_clk),
         //Write interface
-        .we     (s_wr_fb_valid),
+        //Filter the subpages based on page number
+        .we     (s_wr_fb_valid_page),
         .waddr  (s_wr_fb_addr),
-        .wr     (s_wr_fb_data),
+        //use old valid data to replace broken pixel, 0 means dead pixel
+        .wr     ((s_eeprom_data == '0) ? s_wr_old_data : s_norm_data),
         //Read interface
         .re     (i_fb_rd_valid),
         .raddr  (i_fb_rd_addr),
-        .rd     (o_fb_rd_data)
+        .rd     (s_fb_rd_data)
     );
+
 endmodule

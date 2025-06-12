@@ -13,6 +13,7 @@ def gen_page0():
     for _ in range (int(24/2)):
         buff.append(chess_gen_even())
         buff.append(chess_gen_odd())
+    buff.append([1]*64) # we read 64 more words to get variables like Ta/VDD/GAIN
     return sum(buff, [])
 
 def gen_page1():
@@ -20,6 +21,7 @@ def gen_page1():
     for _ in range (int(24/2)):
         buff.append(chess_gen_odd())
         buff.append(chess_gen_even())
+    buff.append([1]*64) # we read 64 more words to get variables like Ta/VDD/GAIN
     return sum(buff, [])
 
 with open("mlx_subpage0_chess_pattern.mem", "w") as f:

@@ -5,34 +5,36 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-module mlx90640_subpages_rom_async #(
+module mlx90640_subpages_rom_sync #(
     parameter WIDTH=1,
-    parameter DEPTH=32*24,
+    parameter DEPTH=32*24+64,
     parameter INIT_F_pg0="mlx_subpage0_chess_pattern.mem",
     parameter INIT_F_pg1="mlx_subpage1_chess_pattern.mem",
     localparam ADDRW=$clog2(DEPTH)
     ) (
-    input wire logic [ADDRW-1:0] addr_pg0,
+    input wire logic clk,
+    input wire logic [ADDRW-1:0] addr,
     output     logic [WIDTH-1:0] data_pg0,
-    input wire logic [ADDRW-1:0] addr_pg1,
     output     logic [WIDTH-1:0] data_pg1
     );
 
-    rom_async #(
+    rom_sync #(
         .WIDTH(WIDTH),
         .DEPTH(DEPTH),
         .INIT_F(INIT_F_pg0)
     ) inst_pg0_rom (
-        .addr(addr_pg0),
+        .clk,
+        .addr,
         .data(data_pg0)
     );
 
-    rom_async #(
+    rom_sync #(
         .WIDTH(WIDTH),
         .DEPTH(DEPTH),
         .INIT_F(INIT_F_pg1)
     ) inst_pg1_rom (
-        .addr(addr_pg1),
+        .clk,
+        .addr,
         .data(data_pg1)
     );
 endmodule

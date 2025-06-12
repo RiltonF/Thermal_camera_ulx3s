@@ -43,7 +43,9 @@ module mlx90640_controller #(
         NONE=0,
         STATUS_READ=1,
         RAM_READ=2,
-        STATUS_WRITE=3
+        STATUS_WRITE=3,
+        CONTROL_WRITE=4,
+        EEPROM_READ=5
     } t_cmd;
 
     typedef struct packed {
@@ -87,11 +89,18 @@ module mlx90640_controller #(
         assign d_init = s_r.init;
     `endif
 
+    localparam c_eeprom_start_addr = 16'h2400;
+    localparam c_eeprom_read_words = 64+32*24;
+
     localparam c_status_register = 16'h8000;
     localparam c_status_reset_val = 16'h0030;
+
     localparam c_control_register = 16'h800D;
+    //{reserved, read pattern, resolution ADC, refresh rate, subpage sel, ena
+    //sub, ena hold, reserved, ena subpage mode}
+    localparam c_control_config_val = {3'b0, 1'b1, 2'b10, 3'b110, 3'b000, 1'b0, 1'b0, 1'b0, 1'b1};
+
     localparam c_ram_start_addr = 16'h0400;
-    // localparam c_ram_read_words = 5;
     localparam c_ram_read_words = 32*24+64;
 
     assign o_done = s_r.done;
@@ -116,7 +125,8 @@ module mlx90640_controller #(
             IDLE: begin
                 if (i_start) begin
                     s_r_next.state = CMD_LOAD;
-                    s_r_next.cmd_type = STATUS_READ;
+                    // s_r_next.cmd_type = STATUS_READ;
+                    s_r_next.cmd_type = EEPROM_READ;
                     s_r_next.done = 1'b0;
                 end
             end
@@ -130,6 +140,17 @@ module mlx90640_controller #(
                 s_r_next.cmd_data.addr_slave = p_slave_addr;
                 s_r_next.cmd_data.sccb_mode = p_sccb_mode;
                 case(s_r.cmd_type)
+                    EEPROM_READ: begin
+                        s_r_next.cmd_data.we = 1'b0;
+                        s_r_next.cmd_data.addr_reg = c_eeprom_start_addr;
+                        s_r_next.cmd_data.burst_num = c_eeprom_read_words - 1'b1;
+                    end
+                    CONTROL_WRITE: begin
+                        s_r_next.cmd_data.we = 1'b1;
+                        s_r_next.cmd_data.addr_reg = c_control_register;
+                        s_r_next.cmd_data.burst_num = '0;
+                        s_r_next.write_data = c_control_config_val;
+                    end
                     STATUS_READ: begin
                         s_r_next.cmd_data.we = 1'b0;
                         s_r_next.cmd_data.addr_reg = c_status_register;
@@ -167,6 +188,15 @@ module mlx90640_controller #(
             CMD_CONTROL: begin
                 if(s_r.ack) begin
                     case(s_r.cmd_type)
+                        EEPROM_READ: begin
+                            s_r_next.state = CMD_LOAD;
+                            s_r_next.cmd_type = CONTROL_WRITE;
+                        end
+                        CONTROL_WRITE: begin
+                            s_r_next.state = DELAY;
+                            s_r_next.cmd_type = STATUS_READ;
+                            s_r_next.delay_timer = p_delay_const;
+                        end
                         STATUS_READ: begin
                             //New data is availabe if bit [3] is high
                             if(s_r.read_data[3]) begin
