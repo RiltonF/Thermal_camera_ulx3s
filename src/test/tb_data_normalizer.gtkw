@@ -1,0 +1,150 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Thu Jun 12 21:13:13 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Thu Jun 12 21:12:46 2025"
+[dumpfile_size] 3887
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_data_normalizer.gtkw"
+[timestart] 160000
+[size] 2560 1358
+[pos] -1 -1
+*-16.873142 281800 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_data_normalizer.
+[treeopen] tb_data_normalizer.dut.
+[sst_width] 274
+[signals_width] 339
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@420
+tb_data_normalizer.dut.ADDRW
+tb_data_normalizer.dut.DATAW
+tb_data_normalizer.dut.FRACTIONW
+tb_data_normalizer.dut.MAX_ADDR
+tb_data_normalizer.dut.c_div_width
+tb_data_normalizer.dut.c_numerator
+tb_data_normalizer.dut.c_signals_reset
+@28
+tb_data_normalizer.dut.i_clk
+@29
+tb_data_normalizer.dut.i_rst
+@420
+tb_data_normalizer.dut.i_min[15:0]
+@24
+tb_data_normalizer.dut.i_range[15:0]
+@28
+tb_data_normalizer.dut.i_start
+tb_data_normalizer.dut.o_rd_valid
+@22
+tb_data_normalizer.dut.i_rd_data[15:0]
+@24
+tb_data_normalizer.dut.o_rd_addr[4:0]
+@200
+-
+@28
+tb_data_normalizer.dut.o_wr_valid
+@24
+tb_data_normalizer.dut.o_wr_addr[4:0]
+tb_data_normalizer.dut.o_wr_data[7:0]
+@200
+-
+@28
+tb_data_normalizer.dut.s_div_busy
+tb_data_normalizer.dut.s_div_done
+@22
+tb_data_normalizer.dut.s_div_result[19:0]
+@28
+tb_data_normalizer.dut.s_div_valid
+@200
+-
+@800028
+tb_data_normalizer.dut.s_pixel_valid[1:0]
+@28
+(1)tb_data_normalizer.dut.s_pixel_valid[1:0]
+(0)tb_data_normalizer.dut.s_pixel_valid[1:0]
+@1001200
+-group_end
+@22
+tb_data_normalizer.dut.s_pixel_delta[17:0]
+@800022
+tb_data_normalizer.dut.s_pixel_multi[35:0]
+@28
+(0)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(1)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(2)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(3)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(4)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(5)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(6)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(7)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(8)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(9)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(10)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(11)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(12)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(13)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(14)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(15)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(16)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(17)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(18)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(19)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(20)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(21)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(22)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(23)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(24)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(25)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(26)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(27)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(28)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(29)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(30)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(31)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(32)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(33)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(34)tb_data_normalizer.dut.s_pixel_multi[35:0]
+(35)tb_data_normalizer.dut.s_pixel_multi[35:0]
+@1001200
+-group_end
+@22
+tb_data_normalizer.d_scale_value[19:0]
+@200
+-
+@28
+tb_data_normalizer.d_div_start
+@22
+tb_data_normalizer.d_min[15:0]
+tb_data_normalizer.d_range[15:0]
+@24
+tb_data_normalizer.d_state[31:0]
+@200
+-
+@420
+tb_data_normalizer.dut.inst_slow_divider.WIDTH
+@22
+tb_data_normalizer.dut.inst_slow_divider.a[19:0]
+tb_data_normalizer.dut.inst_slow_divider.acc[20:0]
+tb_data_normalizer.dut.inst_slow_divider.acc_next[20:0]
+tb_data_normalizer.dut.inst_slow_divider.b1[19:0]
+tb_data_normalizer.dut.inst_slow_divider.b[19:0]
+@28
+tb_data_normalizer.dut.inst_slow_divider.busy
+tb_data_normalizer.dut.inst_slow_divider.clk
+tb_data_normalizer.dut.inst_slow_divider.dbz
+tb_data_normalizer.dut.inst_slow_divider.done
+@24
+tb_data_normalizer.dut.inst_slow_divider.i[4:0]
+@22
+tb_data_normalizer.dut.inst_slow_divider.quo[19:0]
+tb_data_normalizer.dut.inst_slow_divider.quo_next[19:0]
+tb_data_normalizer.dut.inst_slow_divider.rem[19:0]
+@28
+tb_data_normalizer.dut.inst_slow_divider.rst
+tb_data_normalizer.dut.inst_slow_divider.start
+@22
+tb_data_normalizer.dut.inst_slow_divider.val[19:0]
+@28
+tb_data_normalizer.dut.inst_slow_divider.valid
+[pattern_trace] 1
+[pattern_trace] 0
