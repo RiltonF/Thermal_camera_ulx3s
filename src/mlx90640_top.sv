@@ -290,12 +290,14 @@ module mlx90640_top #(
 
     // assign o_debug = s_eeprom_data;
 
+    logic signed [15:0] s_offset;
     // NOTE: Change to memory with a read valid?
     mlx90640_subpages_rom_sync inst_mlx_subpages_rom (
         .clk(i_clk),
         .addr(s_wr_read_addr),
         .data_pg0(s_pg0_valid),
-        .data_pg1(s_pg1_valid)
+        .data_pg1(s_pg1_valid),
+        .data_offsets(s_offset)
     );
 
     localparam int c_running_buff_power = 3;
@@ -310,7 +312,8 @@ module mlx90640_top #(
     //Raw data - offset from eeprom, offset data is sign extended
     //We adjust the data by subtracting the offset, both are signed
     assign s_adj_data = 
-        $signed(s_wr_fb_data) - $signed({{10{s_eeprom_data.offset[5]}}, s_eeprom_data.offset});
+        $signed(s_wr_fb_data) - s_offset;
+        // $signed(s_wr_fb_data) - $signed({{10{s_eeprom_data.offset[5]}}, s_eeprom_data.offset});
 
     //Set range to 1 if range is 0 to prevent divide by 0.
     assign s_range_data = ((s_max_data - s_min_data) == '0) ? 16'sb1 : s_max_data - s_min_data;

@@ -127,7 +127,7 @@ module data_normalizer #(
                     // Store the range an min values
                     // Check if range is zero, to prevent divide by 0
                     // s_r_next.range = (|i_range) ? i_range : 'd1;
-                    s_r_next.range = (i_range < 16) ? 'd16 : i_range;
+                    s_r_next.range = (i_range < 64) ? 'd64: i_range;
                     s_r_next.min = i_min;
                 end
             end
