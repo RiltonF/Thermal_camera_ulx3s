@@ -25,7 +25,9 @@ module data_normalizer #(
 
     output logic             o_wr_valid,
     output logic [ADDRW-1:0] o_wr_addr,
-    output logic [    8-1:0] o_wr_data
+    output logic [    8-1:0] o_wr_data,
+
+    output logic o_debug_overflow
 
 );
     localparam int c_div_width = $clog2(255) + FRACTIONW;
@@ -59,6 +61,20 @@ module data_normalizer #(
     `else
         localparam t_signals c_signals_reset =
             {IDLE, '0};
+
+        t_states d_state;
+        logic [ADDRW-1:0] d_addr;
+        logic d_div_start;
+        logic signed [DATAW-1:0] d_min;
+        logic signed [DATAW-1:0] d_range;
+        logic [c_div_width-1:0] d_scale_value;
+
+        assign d_state = t_states'(s_r.state);
+        assign d_addr = s_r.addr;
+        assign d_div_start = s_r.div_start;
+        assign d_min = s_r.min;
+        assign d_range = s_r.range;
+        assign d_scale_value = s_r.scale_value;
     `endif
 
     //Used for the scale computation (255<<FRACTIONW)/range
@@ -82,9 +98,10 @@ module data_normalizer #(
     logic unsigned [MULTIW*2-1:0] s_pixel_multi;
     logic unsigned [MULTIW*2-FRACTIONW-1:0] s_pixel_normalized;
 
-    assign o_rd_valid = (s_r.state == PIXEL_READ) & (s_r.addr < MAX_ADDR);
+    assign o_rd_valid = (s_r.state == PIXEL_READ) & (s_r.addr <= MAX_ADDR);
     assign o_rd_addr = s_r.addr;
 
+    assign o_debug_overflow = |(s_pixel_normalized>>8);
     //Clip if values above 255
     assign o_wr_data = (s_pixel_normalized>>8 != '0) ? '1 : s_pixel_normalized;
     assign o_wr_addr = s_r.addr-2;
@@ -94,7 +111,8 @@ module data_normalizer #(
     assign s_pixel_normalized = s_pixel_multi >> FRACTIONW;
     always_ff @(posedge i_clk) begin
         s_pixel_valid <= {s_pixel_valid, o_rd_valid};
-        s_pixel_delta <= $signed(i_rd_data) - $signed(s_r.min);
+        s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min));
+        // s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min) < 0) ? 0:$signed(i_rd_data) - $signed(s_r.min);
         // s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min) > s_r.range) ? s_r.range : $signed(i_rd_data) - $signed(s_r.min);
         s_pixel_multi <= s_pixel_delta * s_r.scale_value;
     end
@@ -108,8 +126,8 @@ module data_normalizer #(
                     s_r_next.div_start = 1'b1;
                     // Store the range an min values
                     // Check if range is zero, to prevent divide by 0
-                    // TODO: ADD check for ranges that are too small
-                    s_r_next.range = (|i_range) ? i_range : 1'b1;
+                    // s_r_next.range = (|i_range) ? i_range : 'd1;
+                    s_r_next.range = (i_range < 16) ? 'd16 : i_range;
                     s_r_next.min = i_min;
                 end
             end

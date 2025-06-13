@@ -8,8 +8,13 @@
 module mlx90640_subpages_rom_sync #(
     parameter WIDTH=1,
     parameter DEPTH=32*24+64,
+    `ifndef SIMULATION
     parameter INIT_F_pg0="mlx_subpage0_chess_pattern.mem",
     parameter INIT_F_pg1="mlx_subpage1_chess_pattern.mem",
+    `else
+    parameter INIT_F_pg0="../memory/mlx_subpage0_chess_pattern.mem",
+    parameter INIT_F_pg1="../memory/mlx_subpage1_chess_pattern.mem",
+    `endif
     localparam ADDRW=$clog2(DEPTH)
     ) (
     input wire logic clk,

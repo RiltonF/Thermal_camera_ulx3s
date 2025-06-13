@@ -10,12 +10,12 @@ module mlx90640_top #(
 ) (
     input  logic i_clk,
     input  logic i_rst,
-    input  logic [1:0] i_trig,
+    input  logic i_trig,
     output logic [7:0] o_debug,
 
     input  logic                   i_fb_rd_valid,
     input  logic [c_mlx_addrw-1:0] i_fb_rd_addr,
-    output logic            [16:0] o_fb_rd_data,
+    output logic            [7:0] o_fb_rd_data,
 
     inout logic b_sda,
     inout logic b_scl
@@ -69,7 +69,7 @@ module mlx90640_top #(
     ) inst_mlx_controller (
         .i_clk           (i_clk),
         .i_rst           (i_rst),
-        .i_start         (i_trig[0]),
+        .i_start         (i_trig),
         .o_page_number   (s_page_number),
         .o_cmd_valid     (s_cmd_valid),
         .o_cmd_data      (s_cmd_data),
@@ -238,7 +238,7 @@ module mlx90640_top #(
     end
 
     //--------------------------------------------------------------------------------
-    // Frambuffer ram for MLX read data
+    // Frambuffer ram for MLX RAW read data
     //--------------------------------------------------------------------------------
     typedef struct packed {
         logic signed [5:0] offset;
@@ -257,7 +257,7 @@ module mlx90640_top #(
     logic                   s_wr_fb_valid_page;
     logic signed     [15:0] s_wr_fb_data;
     logic [c_mlx_addrw-1:0] s_wr_fb_addr;
-    logic            [15:0] s_wr_old_data;
+    logic signed     [15:0] s_wr_old_data;
 
     assign s_wr_fb_valid_page = s_wr_fb_valid & ((s_wr_fb_page_number)? s_pg1_valid: s_pg0_valid);
 
@@ -270,8 +270,6 @@ module mlx90640_top #(
         s_wr_fb_addr <= s_wr_read_addr;
         s_wr_fb_data <= s_wr_read_data;
         s_wr_fb_page_number <= s_rd_log_data.page_number;
-        //To be used for dead pixels
-        if (s_wr_fb_valid) s_wr_old_data <= s_wr_fb_data;
     end
 
     // NOTE: might need to add two read ports
@@ -290,7 +288,7 @@ module mlx90640_top #(
         .rd     (s_eeprom_data)
     );
 
-    assign o_debug = s_eeprom_data;
+    // assign o_debug = s_eeprom_data;
 
     // NOTE: Change to memory with a read valid?
     mlx90640_subpages_rom_sync inst_mlx_subpages_rom (
@@ -300,58 +298,179 @@ module mlx90640_top #(
         .data_pg1(s_pg1_valid)
     );
 
+    localparam int c_running_buff_power = 3;
+    localparam int c_buff_len = 2**c_running_buff_power;
+    logic                 s_start_normalization;
+    logic   signed [15:0] s_adj_data, s_max_data, s_min_data;
+    logic unsigned [17:0] s_range_data, s_avg_range_data;
+    // logic unsigned [2**c_buff_len-1:0][15:0] s_range_data_buffer;
+    // logic signed [2**c_buff_len-1:0][15:0] s_min_data_buffer;
+    logic unsigned [17:0] s_avg_min_data;
+
     //Raw data - offset from eeprom, offset data is sign extended
-    logic signed [15:0] s_norm_data, s_max_data, s_min_data, s_range_data;
-    logic signed [15:0] s_max_data_running, s_min_data_running;
-    assign s_norm_data = 
+    //We adjust the data by subtracting the offset, both are signed
+    assign s_adj_data = 
         $signed(s_wr_fb_data) - $signed({{10{s_eeprom_data.offset[5]}}, s_eeprom_data.offset});
 
+    //Set range to 1 if range is 0 to prevent divide by 0.
+    assign s_range_data = ((s_max_data - s_min_data) == '0) ? 16'sb1 : s_max_data - s_min_data;
+
+    // always_comb begin
+    //     logic unsigned [15+c_running_buff_power:0] v_avg_range_data;
+    //     logic unsigned [15+c_running_buff_power:0] v_avg_min_data;
+    //
+    //     v_avg_range_data = 0;
+    //     for (int i=0;i<c_buff_len;i++) begin
+    //         v_avg_range_data += s_range_data_buffer[i];
+    //     end
+    //
+    //     s_avg_range_data = v_avg_range_data >> c_running_buff_power;
+    //
+    //
+    //     v_avg_min_data = 0;
+    //     for (int i=0;i<c_buff_len;i++) begin
+    //         v_avg_min_data += s_min_data_buffer[i];
+    //     end
+    //
+    //     s_avg_min_data = v_avg_min_data >> c_running_buff_power;
+    // end
     always_ff @(posedge i_clk) begin
+        //To be used for dead pixels
+        if (s_wr_fb_valid) s_wr_old_data <= s_adj_data;
+
+        //MIN MAX generation over 1 frame, subpage0 and subpage1
+        s_start_normalization <= '0;
         if (s_wr_fb_valid_page) begin
-            if (s_wr_fb_addr == '0) begin
-                s_min_data <= s_norm_data;
-                s_max_data <= s_norm_data;
-                s_min_data_running <= s_min_data;
-                s_max_data_running <= s_max_data;
-                s_range_data <= ((s_max_data - s_min_data) == 0) ? 16'sb1 : s_max_data - s_min_data;
-            end else begin
-                s_min_data <= (s_norm_data < s_min_data) ? s_norm_data : s_min_data;
-                s_max_data <= (s_norm_data > s_max_data) ? s_norm_data : s_max_data;
+            //check for min max only if the address is below 32*24 because
+            //the rest is configuration data, and we only care about pixel data
+            //Also skip dead pixels
+            if (s_wr_fb_addr < (32*24) & s_eeprom_data != '0) begin
+                s_min_data <= (s_adj_data < s_min_data) ? s_adj_data : s_min_data;
+                s_max_data <= (s_adj_data > s_max_data) ? s_adj_data : s_max_data;
+
+            end else if (s_wr_fb_addr == (32*24)) begin // start of config address
+                // s_min_data_buffer <= {
+                //     s_min_data_buffer[2**c_buff_len-2:0], s_min_data
+                // };
+                // s_range_data_buffer <= {
+                //     s_range_data_buffer[2**c_buff_len-2:0], s_range_data
+                // };
+
+                s_avg_range_data <= (s_avg_range_data * 3'd3 + s_range_data) >> 2;
+                s_avg_min_data <= (s_avg_min_data * 3'd3 + s_min_data) >> 2;
+                // s_avg_range_data <= s_range_data;
+                // s_avg_min_data <= s_min_data;
+                s_start_normalization <= s_page_number; //start normalization when subpage is 1
+
+            end else if ((s_wr_fb_addr == (32*24+64-1)) & s_page_number) begin // start of config address
+                //Reset the min/max
+                s_min_data <= 16'h7fff;
+                s_max_data <= 16'h8000;
             end
         end
     end
 
-    logic                   s_fb_rd_valid;
-    logic signed     [15:0] s_fb_rd_data, s_fb_rd_data_1;
-    logic signed     [31:0] s_fb_rd_data_2, s_fb_rd_data_3;
-    logic [c_mlx_addrw-1:0] s_fb_rd_addr;
-    logic signed     [15:0] s_scale;
+    logic                   s_rd_raw_valid;
+    logic signed     [15:0] s_rd_raw_data;
+    logic [c_mlx_addrw-1:0] s_rd_raw_addr;
 
-    // always_ff @(posedge i_clk) s_fb_rd_data_1 <=(s_fb_rd_data - s_min_data_running);
-    // always_ff @(posedge i_clk) s_fb_rd_data_2 <= s_fb_rd_data_1 * 16'sd255;
-    // always_ff @(posedge i_clk) s_fb_rd_data_3 <= s_fb_rd_data_2 / s_range_data;
-    // always_ff @(posedge i_clk) s_fb_rd_data_1 <=(s_fb_rd_data - s_min_data_running);
-    // always_ff @(posedge i_clk) s_fb_rd_data_2 <= s_fb_rd_data_1 * 16'sd255;
-    // always_ff @(posedge i_clk) s_fb_rd_data_3 <= (8'd255 << 12)/ s_range_data;
-    // assign o_fb_rd_data = s_fb_rd_data_3;
-    assign o_fb_rd_data = s_fb_rd_data;
 
     //Read pixel data from page pattern and eeprom data
     mu_ram_1r1w #(
         .DW($bits(s_wr_read_data)),
         .AW(c_mlx_addrw)
-    ) inst_mlx_fb_mem (
+    ) inst_mlx_raw_fb_mem (
         .clk(i_clk),
         //Write interface
         //Filter the subpages based on page number
         .we     (s_wr_fb_valid_page),
         .waddr  (s_wr_fb_addr),
         //use old valid data to replace broken pixel, 0 means dead pixel
-        .wr     ((s_eeprom_data == '0) ? s_wr_old_data : s_norm_data),
+        .wr     ((s_eeprom_data == '0) ? s_wr_old_data : s_adj_data),
+        //Read interface
+        .re     (s_rd_raw_valid),
+        .raddr  (s_rd_raw_addr),
+        .rd     (s_rd_raw_data)
+        // .re     (i_fb_rd_valid),
+        // .raddr  (i_fb_rd_addr),
+        // .rd     (o_fb_rd_data)
+    );
+
+    //--------------------------------------------------------------------------------
+    // Normalization calculation and storage
+    //--------------------------------------------------------------------------------
+
+    logic                   s_wr_normalized_valid;
+    logic unsigned    [7:0] s_wr_normalized_data;
+    logic [c_mlx_addrw-1:0] s_wr_normalized_addr;
+    logic s_wr_normalized_overflow;
+
+    // Send start signal only if the fb is writing the last data
+    // assign s_start_normalization = s_wr_fb_valid & s_page_number & s_wr_fb_addr == (32*24+64-1);
+
+    // assign o_debug = {s_wr_normalized_data>>4,
+    assign o_debug = {'0,
+                        // |s_range_data[0+:4],
+                        // |s_range_data[4+:4],
+                        // |s_range_data[8+:4],
+                        // |s_range_data[12+:4],
+                        // s_range_data[8+:8],
+                        // s_min_data < s_max_data,
+                        // s_wr_normalized_overflow,
+                        // s_wr_normalized_data>>2,
+                        s_wr_normalized_addr,
+                        s_rd_raw_valid,
+                        s_wr_normalized_valid,
+                        // s_start_normalization,
+                        // s_page_number};
+                        s_start_normalization};
+    // assign o_debug = {s_wr_normalized_data,s_wr_normalized_valid,s_start_normalization};
+    // assign o_debug = {o_fb_rd_data>>1,i_fb_rd_valid};
+    // assign o_debug = {i_fb_rd_addr>>1,i_fb_rd_valid};
+
+    logic s_toggle;
+    always_ff @(posedge i_clk) begin
+        if(i_rst) s_toggle <= '0;
+        else if(i_trig) s_toggle <= ~s_toggle;
+    end
+    data_normalizer #(
+        .DATAW     ($bits(s_min_data)),
+        .MAX_ADDR  (32*24-1),
+        .FRACTIONW (12) // NOTE: Play with this value
+    ) inst_data_normalizer (
+        .i_clk      (i_clk),
+        .i_rst      (i_rst),
+        // .i_start    (i_trig),
+        // TODO: Replace
+        .i_start    (s_start_normalization),
+        // .i_min      (s_min_data),
+        .i_min      ((s_toggle)? s_min_data : s_avg_min_data),
+        .i_range    ((s_toggle)? s_range_data : s_avg_range_data),
+        // .i_range    (s_range_data),
+        // .i_range    (s_avg_range_data),
+        .o_rd_valid (s_rd_raw_valid),
+        .o_rd_addr  (s_rd_raw_addr),
+        .i_rd_data  (s_rd_raw_data),
+        .o_wr_valid (s_wr_normalized_valid),
+        .o_wr_addr  (s_wr_normalized_addr),
+        .o_wr_data  (s_wr_normalized_data),
+        .o_debug_overflow(s_wr_normalized_overflow)
+    );
+
+    // Normalized data to range 0..255
+    mu_ram_1r1w #(
+        .DW($bits(o_fb_rd_data)),
+        .AW(c_mlx_addrw)
+    ) inst_mlx_normalized_fb_mem (
+        .clk(i_clk),
+        //Write interface
+        .we     (s_wr_normalized_valid),
+        .waddr  (s_wr_normalized_addr),
+        .wr     (s_wr_normalized_data),
         //Read interface
         .re     (i_fb_rd_valid),
         .raddr  (i_fb_rd_addr),
-        .rd     (s_fb_rd_data)
+        .rd     (o_fb_rd_data)
     );
 
 endmodule

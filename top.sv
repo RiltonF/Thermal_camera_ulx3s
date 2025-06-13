@@ -47,6 +47,7 @@ module top #(
     logic [7:0] s_wr_data;
     logic [7:0] s_rom_addr;
     logic [15:0] s_rom_data;
+    logic s_cam_done;
     i2c_rom_cmd_parser #(
       .p_sccb_mode      (1),
       .p_slave_addr     ('h21),
@@ -58,7 +59,7 @@ module top #(
       .i_start     (s_btn_trig[4]),
       .o_addr      (s_rom_addr),
       .i_data      (s_rom_data),
-      // .o_done      (led[0]),
+      .o_done      (s_cam_done),
       .o_cmd_valid (s_cmd_valid),
       .o_cmd_data  (s_cmd_data),
       .o_wr_data   (s_wr_data),
@@ -100,7 +101,7 @@ module top #(
     localparam c_mlx_addrw = $clog2(32*24+64);
     logic                   i_fb_rd_valid;
     logic [c_mlx_addrw-1:0] i_fb_rd_addr;
-    logic            [16:0] o_fb_rd_data;
+    logic            [7:0] o_fb_rd_data;
 
     logic signed [16-1:0] vga_x_pos;
     logic signed [16-1:0] vga_y_pos;
@@ -110,7 +111,7 @@ module top #(
     ) inst_mlx (
       .i_clk(s_clk_sys),
       .i_rst(s_rst),
-      .i_trig(s_btn_trig[6]),
+      .i_trig(s_cam_done | s_btn_trig[6]),
       .o_debug(led),
       .i_fb_rd_valid,
       .i_fb_rd_addr,
@@ -220,10 +221,13 @@ module top #(
       i_fb_rd_valid = 1'b1;
 
       if ((v_x_pos < 32) & (v_y_pos < 24)) begin
+      // i_fb_rd_valid = s_de;
         s_colors3[0] = o_fb_rd_data;
         s_colors3[1] = o_fb_rd_data;
         s_colors3[2] = o_fb_rd_data;
+        // s_colors3[2] = '1;
       end else begin
+      // i_fb_rd_valid = 1'b0;
         s_colors3[0] = s_colors[0];
         s_colors3[1] = s_colors[1];
         s_colors3[2] = s_colors[2];

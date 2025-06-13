@@ -83,10 +83,10 @@ module i2c_rom_cmd_parser #(
         s_r_next = s_r;
         case(s_r.state)
             IDLE: begin
+                s_r_next.done = 1'b0;
                 if (i_start | ~s_r.init) begin
                     s_r_next.addr = '0;
                     s_r_next.state = CMD_LOAD;
-                    s_r_next.done = 1'b0;
                 end
             end
             CMD_LOAD: begin

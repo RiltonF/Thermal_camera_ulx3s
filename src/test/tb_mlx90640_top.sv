@@ -12,6 +12,11 @@
 `include "i2c_req_manager_16bit.sv"
 `include "mu_fifo_sync.v"
 `include "mu_widthadapt_1_to_2.v"
+`include "mu_ram_1r1w.v"
+`include "mlx90640_subpages_rom_sync.sv"
+`include "data_normalizer.sv"
+`include "rom_sync.sv"
+`include "divu_int.sv"
 // `include "mu_ram_1r1w.v"
 
 `timescale 1 ns / 100 ps
@@ -128,6 +133,48 @@ module tb_mlx90640_top();
     end
     begin
         while (1) begin
+            wait(dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.i_req & dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.i_we);
+            wait(dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.s_r.bit_counter == 8);
+            s_set_sda = 0; 
+            `WAIT(s_scl)
+            `WAIT(~s_scl)
+            wait_cycles(4);
+            s_set_sda = 1; 
+        end
+    end
+    begin
+        i_trig = 1;
+        repeat (8) begin
+            // `WAIT(dut.s_cmd_valid & dut.s_cmd_ready)
+            wait_cycles(4);
+        end
+        wait(dut.inst_data_normalizer.i_start);
+    end
+    join_any
+    disable fork;
+
+    `UNIT_TEST_END
+    `UNIT_TEST("TESTCASE_NAME")
+    #1ns;
+    fork
+    static logic [7:0] c_val = 8'b10000;
+    begin
+        while (1) begin
+            `WAIT(dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.i_req & ~dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.i_we)
+            wait_cycles(4);
+            for(int i = 0; i<8;i++) begin
+                `WAIT(~s_scl)
+                wait_cycles(10);
+                s_set_sda = c_val[i]; 
+                `WAIT(s_scl)
+            end
+            `WAIT(~s_scl)
+            wait_cycles(4);
+            s_set_sda = 1; 
+        end
+    end
+    begin
+        while (1) begin
             `WAIT(dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.i_req & dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.i_we)
             `WAIT(dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.s_r.bit_counter == 8)
             s_set_sda = 0; 
@@ -143,7 +190,7 @@ module tb_mlx90640_top();
             `WAIT(dut.s_cmd_valid & dut.s_cmd_ready)
             wait_cycles(4);
         end
-        // wait_cycles(8000);
+        wait_cycles(8000);
     end
     join_any
     disable fork;
