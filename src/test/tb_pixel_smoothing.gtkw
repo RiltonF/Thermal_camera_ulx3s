@@ -1,0 +1,75 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Mon Jun 16 14:33:10 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Mon Jun 16 13:26:11 2025"
+[dumpfile_size] 14421
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_pixel_smoothing.gtkw"
+[timestart] 10115200
+[size] 2560 1358
+[pos] -1 -1
+*-16.438826 1613900 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_pixel_smoothing.
+[sst_width] 274
+[signals_width] 234
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@420
+tb_pixel_smoothing.dut.ADDRW
+tb_pixel_smoothing.dut.MAX_ADDR
+@28
+tb_pixel_smoothing.dut.i_clk
+tb_pixel_smoothing.dut.i_rst
+tb_pixel_smoothing.dut.i_start
+@200
+-
+@28
+tb_pixel_smoothing.dut.i_wr_valid
+@22
+tb_pixel_smoothing.dut.i_wr_addr[5:0]
+tb_pixel_smoothing.dut.i_wr_data[7:0]
+@200
+-
+@28
+tb_pixel_smoothing.dut.o_wr_valid
+@22
+tb_pixel_smoothing.dut.o_wr_addr[5:0]
+tb_pixel_smoothing.dut.o_wr_data[7:0]
+@200
+-
+@28
+tb_pixel_smoothing.dut.s_norm_valid
+@22
+tb_pixel_smoothing.dut.s_norm_addr[5:0]
+tb_pixel_smoothing.dut.s_norm_data[7:0]
+@200
+-
+@28
+tb_pixel_smoothing.dut.s_avg_valid
+@22
+tb_pixel_smoothing.dut.s_avg_addr[5:0]
+tb_pixel_smoothing.dut.s_avg_old[7:0]
+@200
+-
+@28
+tb_pixel_smoothing.dut.s_init_done
+tb_pixel_smoothing.dut.s_init_done_next
+tb_pixel_smoothing.dut.s_init_mode
+tb_pixel_smoothing.dut.s_init_mode_next
+@200
+-
+@28
+tb_pixel_smoothing.dut.s_rd_avg_valid
+@22
+tb_pixel_smoothing.dut.s_rd_avg_addr[5:0]
+tb_pixel_smoothing.dut.s_rd_avg_data[7:0]
+@200
+-
+@29
+tb_pixel_smoothing.dut.s_wr_avg_valid
+@22
+tb_pixel_smoothing.dut.s_wr_avg_addr[5:0]
+tb_pixel_smoothing.dut.s_wr_avg_data[7:0]
+[pattern_trace] 1
+[pattern_trace] 0

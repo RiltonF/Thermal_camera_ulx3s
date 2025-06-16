@@ -10,6 +10,7 @@ module data_normalizer #(
     parameter int MAX_ADDR = 2**6-1,
     parameter int MULTIW = 18, //Max width of your dsp multiplier, ECP5 is 18
     parameter int FRACTIONW = 12, //This should be equal to or less than MULTIW
+    parameter int MIN_RANGE = 100,
     localparam int ADDRW = $clog2(MAX_ADDR)
 
 ) (
@@ -111,8 +112,8 @@ module data_normalizer #(
     assign s_pixel_normalized = s_pixel_multi >> FRACTIONW;
     always_ff @(posedge i_clk) begin
         s_pixel_valid <= {s_pixel_valid, o_rd_valid};
-        s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min));
-        // s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min) < 0) ? 0:$signed(i_rd_data) - $signed(s_r.min);
+        // s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min));
+        s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min) < 0) ? 0:$signed(i_rd_data) - $signed(s_r.min);
         // s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min) > s_r.range) ? s_r.range : $signed(i_rd_data) - $signed(s_r.min);
         s_pixel_multi <= s_pixel_delta * s_r.scale_value;
     end
@@ -127,7 +128,7 @@ module data_normalizer #(
                     // Store the range an min values
                     // Check if range is zero, to prevent divide by 0
                     // s_r_next.range = (|i_range) ? i_range : 'd1;
-                    s_r_next.range = (i_range < 64) ? 'd64: i_range;
+                    s_r_next.range = (i_range < MIN_RANGE) ? MIN_RANGE : i_range;
                     s_r_next.min = i_min;
                 end
             end

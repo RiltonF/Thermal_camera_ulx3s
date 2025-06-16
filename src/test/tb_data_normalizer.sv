@@ -122,6 +122,35 @@ module tb_data_normalizer();
     `TEST_SUITE("TESTSUITE_NAME")
 
 
+    `UNIT_TEST("TEST_0_255")
+        #1ns;
+        fork
+        begin
+            repeat (MAX_ADDR) begin
+                `WAIT(o_wr_valid)
+                #2ns;
+                $display((dut.s_r.scale_value * o_wr_addr)>>FRACTIONW);
+                `ASSERT(o_wr_data == (dut.s_r.scale_value * o_wr_addr)>>FRACTIONW)
+                wait_cycles(1);
+            end
+        end
+        begin
+            i_start = 1;
+            i_min = 0;
+            i_range = 255;
+            `WAIT(dut.inst_slow_divider.done)
+            i_rd_data = 0;
+            wait_cycles(2);
+            repeat (i_range) begin
+                wait_cycles(1);
+                i_rd_data++;
+            end
+            wait_cycles(10);
+        end
+        join_any
+        disable fork;
+
+    `UNIT_TEST_END
     `UNIT_TEST("TEST_MIN_-5")
         #1ns;
         fork

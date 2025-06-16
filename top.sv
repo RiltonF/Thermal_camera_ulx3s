@@ -112,7 +112,7 @@ module top #(
       .i_clk(s_clk_sys),
       .i_rst(s_rst),
       .i_trig(s_cam_done | s_btn_trig[6]),
-      .o_debug(led),
+      // .o_debug(led),
       .i_fb_rd_valid,
       .i_fb_rd_addr,
       .o_fb_rd_data,
@@ -173,9 +173,10 @@ module top #(
     assign gn20 = led[0]; //LA OV Data lines
 
     logic [p_num_states-1:0] s_demo_state;
-    logic s_hsync;
-    logic s_vsync;
-    logic s_de;
+    logic s_hsync[2], s_vsync[2], s_de[2];
+    // logic s_hsync;
+    // logic s_vsync;
+    // logic s_de;
     logic s_frame;
     logic s_line;
     logic [7:0] s_colors [3];
@@ -191,15 +192,23 @@ module top #(
       .i_clk(s_clk_pixel),
       .i_rst(s_rst),
       .i_camera(s_camera),
-      .o_hsync (s_hsync),
-      .o_vsync (s_vsync),
-      .o_de(s_de),
+      .o_hsync (s_hsync[0]),
+      .o_vsync (s_vsync[0]),
+      .o_de(s_de[0]),
       // .led(led),
       .vga_x_pos,
       .vga_y_pos,
       .i_toggle(s_btn_trig[3]),
       .o_data(s_colors)
     );
+
+    always_ff @(posedge s_clk_pixel) begin
+      s_hsync[1] <= s_hsync[0];
+      s_vsync[1] <= s_vsync[0];
+      s_de[1] <= s_de[0];
+    end
+
+    assign led = {i_fb_rd_addr, s_vsync[1], s_hsync[1], s_de[1]};
 
     // assign s_colors3[0] = s_colors[0];
     // assign s_colors3[1] = s_colors[1];
@@ -216,8 +225,8 @@ module top #(
       v_y_pos = vga_y_pos>>3;
 
       //32-x for v flip
-      // i_fb_rd_addr = v_y_pos*'d32 + (32-v_x_pos);
-      i_fb_rd_addr = v_y_pos*'d32 + (v_x_pos);
+      i_fb_rd_addr = v_y_pos*'d32 + (32-v_x_pos);
+      // i_fb_rd_addr = v_y_pos*'d32 + (v_x_pos);
       i_fb_rd_valid = 1'b1;
 
       if ((v_x_pos < 32) & (v_y_pos < 24)) begin
@@ -242,9 +251,9 @@ module top #(
       .i_clk_pixel (s_clk_pixel),
       .i_clk_shift (s_clk_shift),
       .i_rst       (s_rst),
-      .i_hsync     (s_hsync),
-      .i_vsync     (s_vsync),
-      .i_blank     (~s_de),
+      .i_hsync     (s_hsync[1]),
+      .i_vsync     (s_vsync[1]),
+      .i_blank     (~s_de[1]),
       .i_data      (s_colors3),
       .o_data_p    (gpdi_dp[2:0])
     );

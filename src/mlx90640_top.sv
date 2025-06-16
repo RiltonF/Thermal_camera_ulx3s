@@ -88,7 +88,7 @@ module mlx90640_top #(
     logic        s_rd_8b_ready;
 
     i2c_master_wrapper_16b #(
-        .I2C_FREQ(200_000), //TODO: fix this 
+        .I2C_FREQ(200_000), //TODO: fix this
         .CMD_FIFO(0),
         .RD_FIFO(0),
         .WR_FIFO(1)
@@ -182,7 +182,7 @@ module mlx90640_top #(
         t_arb_states state;
         logic [BURST_WIDTH_16b:0] word_counter;
     }t_signals;
-    
+
     t_signals s_r, s_r_next;
 
     `ifndef SIMULATION
@@ -305,41 +305,20 @@ module mlx90640_top #(
     logic                 s_start_normalization;
     logic   signed [15:0] s_adj_data, s_max_data, s_min_data;
     logic unsigned [17:0] s_range_data, s_avg_range_data;
-    // logic unsigned [2**c_buff_len-1:0][15:0] s_range_data_buffer;
-    // logic signed [2**c_buff_len-1:0][15:0] s_min_data_buffer;
     logic unsigned [17:0] s_avg_min_data;
 
     //Raw data - offset from eeprom, offset data is sign extended
     //We adjust the data by subtracting the offset, both are signed
-    assign s_adj_data = 
+    assign s_adj_data =
         $signed(s_wr_fb_data) - s_offset;
         // $signed(s_wr_fb_data) - $signed({{10{s_eeprom_data.offset[5]}}, s_eeprom_data.offset});
 
     //Set range to 1 if range is 0 to prevent divide by 0.
     assign s_range_data = ((s_max_data - s_min_data) == '0) ? 16'sb1 : s_max_data - s_min_data;
 
-    // always_comb begin
-    //     logic unsigned [15+c_running_buff_power:0] v_avg_range_data;
-    //     logic unsigned [15+c_running_buff_power:0] v_avg_min_data;
-    //
-    //     v_avg_range_data = 0;
-    //     for (int i=0;i<c_buff_len;i++) begin
-    //         v_avg_range_data += s_range_data_buffer[i];
-    //     end
-    //
-    //     s_avg_range_data = v_avg_range_data >> c_running_buff_power;
-    //
-    //
-    //     v_avg_min_data = 0;
-    //     for (int i=0;i<c_buff_len;i++) begin
-    //         v_avg_min_data += s_min_data_buffer[i];
-    //     end
-    //
-    //     s_avg_min_data = v_avg_min_data >> c_running_buff_power;
-    // end
     always_ff @(posedge i_clk) begin
         //To be used for dead pixels
-        if (s_wr_fb_valid) s_wr_old_data <= s_adj_data;
+        if (s_wr_fb_valid_page) s_wr_old_data <= s_adj_data;
 
         //MIN MAX generation over 1 frame, subpage0 and subpage1
         s_start_normalization <= '0;
@@ -352,13 +331,6 @@ module mlx90640_top #(
                 s_max_data <= (s_adj_data > s_max_data) ? s_adj_data : s_max_data;
 
             end else if (s_wr_fb_addr == (32*24)) begin // start of config address
-                // s_min_data_buffer <= {
-                //     s_min_data_buffer[2**c_buff_len-2:0], s_min_data
-                // };
-                // s_range_data_buffer <= {
-                //     s_range_data_buffer[2**c_buff_len-2:0], s_range_data
-                // };
-
                 s_avg_range_data <= (s_avg_range_data * 3'd3 + s_range_data) >> 2;
                 s_avg_min_data <= (s_avg_min_data * 3'd3 + s_min_data) >> 2;
                 // s_avg_range_data <= s_range_data;
@@ -413,10 +385,6 @@ module mlx90640_top #(
 
     // assign o_debug = {s_wr_normalized_data>>4,
     assign o_debug = {'0,
-                        // |s_range_data[0+:4],
-                        // |s_range_data[4+:4],
-                        // |s_range_data[8+:4],
-                        // |s_range_data[12+:4],
                         // s_range_data[8+:8],
                         // s_min_data < s_max_data,
                         // s_wr_normalized_overflow,
@@ -460,6 +428,24 @@ module mlx90640_top #(
         .o_debug_overflow(s_wr_normalized_overflow)
     );
 
+    logic                   s_wr_smooth_valid;
+    logic [c_mlx_addrw-1:0] s_wr_smooth_addr;
+    logic [          8-1:0] s_wr_smooth_data;
+
+    pixel_smoothing #(
+        .MAX_ADDR  (32*24-1)
+    ) inst_pixel_smoothing (
+    .i_clk      (i_clk),
+    .i_rst      (i_rst),
+    .i_start    (i_trig),
+    .i_wr_valid (s_wr_normalized_valid),
+    .i_wr_addr  (s_wr_normalized_addr),
+    .i_wr_data  (s_wr_normalized_data),
+    .o_wr_valid (s_wr_smooth_valid),
+    .o_wr_addr  (s_wr_smooth_addr),
+    .o_wr_data  (s_wr_smooth_data)
+    );
+
     // Normalized data to range 0..255
     mu_ram_1r1w #(
         .DW($bits(o_fb_rd_data)),
@@ -467,9 +453,12 @@ module mlx90640_top #(
     ) inst_mlx_normalized_fb_mem (
         .clk(i_clk),
         //Write interface
-        .we     (s_wr_normalized_valid),
-        .waddr  (s_wr_normalized_addr),
-        .wr     (s_wr_normalized_data),
+        // .we     (s_wr_normalized_valid),
+        // .waddr  (s_wr_normalized_addr),
+        // .wr     (s_wr_normalized_data),
+        .we     (s_wr_smooth_valid),
+        .waddr  (s_wr_smooth_addr),
+        .wr     (s_wr_smooth_data),
         //Read interface
         .re     (i_fb_rd_valid),
         .raddr  (i_fb_rd_addr),
