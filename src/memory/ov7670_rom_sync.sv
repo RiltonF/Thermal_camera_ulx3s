@@ -10,6 +10,7 @@ module ov7670_rom_sync #(
     parameter DEPTH=2**8,
     `ifndef SIMULATION
     parameter INIT_F="ov7670_config.mem",
+    // parameter INIT_F="ov7670_config_640x480.mem",
     `else
     //need to give path from tb file, not rom_sync for simulation
     parameter INIT_F="../memory/ov7670_config.mem",
