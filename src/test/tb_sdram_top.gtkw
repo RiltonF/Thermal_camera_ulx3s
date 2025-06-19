@@ -1,0 +1,74 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Thu Jun 19 09:27:00 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Thu Jun 19 09:25:02 2025"
+[dumpfile_size] 1900
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_sdram_top.gtkw"
+[timestart] 0
+[size] 2560 1358
+[pos] -1 -1
+*-16.581188 487200 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_sdram_top.
+[sst_width] 274
+[signals_width] 257
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@22
+tb_sdram_top.dut.b_sdram_dq[15:0]
+@420
+tb_sdram_top.dut.p_sdram_banks
+tb_sdram_top.dut.p_sdram_dataw
+tb_sdram_top.dut.p_sdram_rows
+tb_sdram_top.dut.c_addrw
+tb_sdram_top.dut.c_bankw
+tb_sdram_top.dut.c_countw
+tb_sdram_top.dut.c_full_frame_pages
+tb_sdram_top.dut.c_full_frame_words
+tb_sdram_top.dut.c_signals_reset
+@28
+tb_sdram_top.dut.i_rd_fifo_ready
+tb_sdram_top.dut.i_debug_trig[1:0]
+tb_sdram_top.dut.s_sdram_clk
+tb_sdram_top.dut.s_sdram_rst
+[color] 2
+tb_sdram_top.dut.s_sdram_ready
+@200
+-
+@28
+tb_sdram_top.dut.s_rd_req_valid
+tb_sdram_top.dut.s_wr_req_valid
+@200
+-
+@28
+tb_sdram_top.dut.d_sdram_rw
+[color] 3
+tb_sdram_top.dut.d_sdram_rw_en
+[color] 7
+tb_sdram_top.dut.d_busy
+@25
+tb_sdram_top.dut.d_sdram_addr[12:0]
+@200
+-
+@24
+tb_sdram_top.dut.d_read_row[9:0]
+@22
+tb_sdram_top.dut.d_write_row[9:0]
+@200
+-
+-
+@22
+tb_sdram_top.dut.i_wr_fifo_data[15:0]
+@28
+tb_sdram_top.dut.i_wr_fifo_valid
+@22
+tb_sdram_top.dut.o_debug_status[7:0]
+tb_sdram_top.dut.o_rd_fifo_data[15:0]
+@28
+tb_sdram_top.dut.o_rd_fifo_valid
+@22
+tb_sdram_top.dut.s_r[38:0]
+tb_sdram_top.dut.s_r_next[38:0]
+[pattern_trace] 1
+[pattern_trace] 0
