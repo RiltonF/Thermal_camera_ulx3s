@@ -281,14 +281,14 @@ module top #(
     endgenerate
     generate
       if(p_ddr_mode) begin : gen_ddr_pll
-        clk2 inst_clk_gen_ddr (
+        clk_vga_ddr inst_clk_gen_ddr (
           .clkin(clk_25mhz),
           .clkout0(s_clk_shift), //125
           .clkout1(s_clk_sys), //25
           .locked()
           );
       end else begin : gen_sdr_pll
-        clk1 inst_clk_gen_sdr (
+        clk_vga_sdr inst_clk_gen_sdr (
           .clkin(clk_25mhz),
           .clkout0(s_clk_shift), //250
           .clkout1(s_clk_sys), //25
