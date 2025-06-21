@@ -1,0 +1,49 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Sat Jun 21 21:40:29 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Sat Jun 21 21:39:39 2025"
+[dumpfile_size] 1606
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_simple_widthadapt_1_to_x.gtkw"
+[timestart] 486000
+[size] 2560 1358
+[pos] -1 -1
+*-15.510208 534100 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_simple_widthadapt_1_to_x.
+[sst_width] 274
+[signals_width] 488
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@28
+tb_simple_widthadapt_1_to_x.dut.i_clk
+tb_simple_widthadapt_1_to_x.dut.i_rst
+@420
+tb_simple_widthadapt_1_to_x.dut.p_iwidth
+tb_simple_widthadapt_1_to_x.dut.p_owidth
+tb_simple_widthadapt_1_to_x.dut.p_x
+tb_simple_widthadapt_1_to_x.dut.p_xw
+@22
+tb_simple_widthadapt_1_to_x.dut.s_fill_counter[3:0]
+@200
+-
+@28
+tb_simple_widthadapt_1_to_x.dut.i_valid
+@22
+tb_simple_widthadapt_1_to_x.dut.i_data[15:0]
+@28
+tb_simple_widthadapt_1_to_x.dut.o_ready
+@200
+-
+@28
+tb_simple_widthadapt_1_to_x.dut.o_valid
+@22
+tb_simple_widthadapt_1_to_x.dut.o_data[127:0]
+@29
+tb_simple_widthadapt_1_to_x.dut.i_ready
+@200
+-
+@28
+tb_simple_widthadapt_1_to_x.dut.s_full
+[pattern_trace] 1
+[pattern_trace] 0
