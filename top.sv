@@ -10,6 +10,7 @@ module top #(
   ) (
     input logic clk_25mhz,
     input logic [6:0] btn,
+    input logic [3:0] sw,
     output logic [7:0] led,
     output logic [3:0] gpdi_dp,
 
@@ -18,12 +19,22 @@ module top #(
     input gn1,    gn3,gn4,gn5,gn6,
     output    gn2, //clock in to cam
     output gp13,gp12, //cam reset and power
+
     //Logic analyzer pins
     output gp14,gp15,gp16,gp17,gp18,gp19,gp20,
     output gn14,gn15,gn16,gn17,gn18,gn19,gn20,
 
-    output gn27,gp27
-    
+    //SDRAM Interface
+    output wire        sdram_clk,
+    output wire        sdram_cke,
+    output wire        sdram_csn,
+    output wire        sdram_wen,
+    output wire        sdram_rasn,
+    output wire        sdram_casn,
+    output wire [12:0] sdram_a,
+    output wire [ 1:0] sdram_ba,
+    output wire [ 1:0] sdram_dqm,
+    inout  wire [15:0] sdram_d
 );
     //unsupported by verilator :/
     // alias sda = gn0;
@@ -36,27 +47,34 @@ module top #(
     assign s_clk_pixel = s_clk_sys;
     assign s_rst = ~btn[0]; //ignore the debouce for btn[0]
 
-    // t_i2c_cmd o_data;
-    // assign o_data = 
-    //   '{we:s_btn_trig[4]|s_btn_trig[6], sccb_mode:1, addr_slave:'h21, addr_reg:'h1E, burst_num:'d0}; 
 
-    assign gn27 = led[7];
+    logic [9:0] row,col,row_max,col_max;
 
-    logic s_cmd_valid, s_cmd_ready;
+    logic s_cam_done;
+    logic s_sdram_done;
+
+    logic signed [16-1:0] vga_x_pos;
+    logic signed [16-1:0] vga_y_pos;
+
+    //--------------------------------------------------------------------------------
+    // CAMERA CONFIG OV7670
+    //--------------------------------------------------------------------------------
+    logic s_cmd_valid;
+    logic s_cmd_ready;
     t_i2c_cmd s_cmd_data;
     logic [7:0] s_wr_data;
     logic [7:0] s_rom_addr;
     logic [15:0] s_rom_data;
-    logic s_cam_done;
     i2c_rom_cmd_parser #(
       .p_sccb_mode      (1),
       .p_slave_addr     ('h21),
       .p_wr_mode        (1),
+      .p_auto_init      (0), 
       .p_rom_addr_width (8)
     ) inst_i2c_rom_cmd_parser (
       .i_clk       (s_clk_sys),
       .i_rst       (s_rst),
-      .i_start     (s_btn_trig[4]),
+      .i_start     (s_btn_trig[3]),
       .o_addr      (s_rom_addr),
       .i_data      (s_rom_data),
       .o_done      (s_cam_done),
@@ -83,45 +101,118 @@ module top #(
 
       .i_wr_fifo_valid(s_cmd_valid),
       .i_wr_fifo_data(s_wr_data),
-      .o_wr_fifo_ready(),
 
-      .o_rd_fifo_valid(),
-      // .o_rd_fifo_data(led[7:1]),
-      .i_rd_fifo_ready(),
+      .i_rd_fifo_ready(1'b0),
 
-      .b_sda(gn0),
-      .b_scl(gp0)
-      // .b_sda(s_camera.sda),
-      // .b_scl(s_camera.scl)
-    );
-
-    //--------------------------------------------------------------------------------
-    //MLX TOP
-    //--------------------------------------------------------------------------------
-    localparam c_mlx_addrw = $clog2(32*24+64);
-    logic                   i_fb_rd_valid;
-    logic [c_mlx_addrw-1:0] i_fb_rd_addr;
-    logic            [7:0] o_fb_rd_data;
-
-    logic signed [16-1:0] vga_x_pos;
-    logic signed [16-1:0] vga_y_pos;
-
-    mlx90640_top #(
-      // .p_delay_const()
-    ) inst_mlx (
-      .i_clk(s_clk_sys),
-      .i_rst(s_rst),
-      .i_trig(s_cam_done | s_btn_trig[6]),
-      // .o_debug(led),
-      .i_fb_rd_valid,
-      .i_fb_rd_addr,
-      .o_fb_rd_data,
       .b_sda(gn0),
       .b_scl(gp0)
     );
 
+    //--------------------------------------------------------------------------------
+    // MLX TOP
+    //--------------------------------------------------------------------------------
+    // localparam c_mlx_addrw = $clog2(32*24+64);
+    // logic                   i_fb_rd_valid;
+    // logic [c_mlx_addrw-1:0] i_fb_rd_addr;
+    // logic            [7:0] o_fb_rd_data;
+    //
+    //
+    // mlx90640_top #(
+    //   // .p_delay_const()
+    // ) inst_mlx (
+    //   .i_clk(s_clk_sys),
+    //   .i_rst(s_rst),
+    //   .i_trig(s_btn_trig[6]),
+    //   // .i_trig(s_cam_done | s_btn_trig[6]),
+    //   // .o_debug(led),
+    //   .i_fb_rd_valid,
+    //   .i_fb_rd_addr,
+    //   .o_fb_rd_data,
+    //   .b_sda(gn0),
+    //   .b_scl(gp0)
+    // );
 
-    //CAMERA -------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    // SDRAM TOP
+    //--------------------------------------------------------------------------------
+    logic [7:0] s_colors_test [3];
+    logic          s_wr_fifo_valid;
+    logic [16-1:0] s_wr_fifo_data;
+    logic          s_wr_fifo_ready;
+
+    logic          s_rd_fifo_valid;
+    logic [16-1:0] s_rd_fifo_data;
+    logic          s_rd_fifo_ready;
+
+    logic [7:0] s_debug_status;
+    logic s_sdram_init_done;
+
+    logic s_frame;
+
+    
+
+    logic [15:0] s_counter;
+    always_ff @(posedge s_clk_sys) begin
+      if (s_rst) begin
+        s_counter <= '0;
+      end else begin
+        if(s_wr_fifo_ready&s_wr_fifo_valid) s_counter <= s_counter + 1;
+      end
+    end
+
+    sdram_top #(
+      .p_sdram_dataw (16)
+    ) inst_sdram_top (
+      .i_clk           (s_clk_sys),
+      .i_rst           (s_rst),
+
+      .i_clk_wr_fifo   (s_camera.clk_pixel),
+      .i_wr_fifo_valid (s_wr_fifo_valid),
+      // .i_wr_fifo_data  (s_wr_fifo_data),
+      .i_wr_fifo_data  (col[6:0]<<5),
+      // .i_wr_fifo_data  (s_counter),
+      // .i_wr_fifo_data  (row[4:0]),
+      // .i_wr_fifo_valid ('1),
+      // .i_wr_fifo_data  ({5'b11111,11'b0}),
+      // .i_wr_fifo_data  ({5'b11111}),
+      .o_wr_fifo_ready (s_wr_fifo_ready),
+
+      .o_rd_fifo_valid (s_rd_fifo_valid),
+      .o_rd_fifo_data  (s_rd_fifo_data),
+      .i_rd_fifo_ready (s_rd_fifo_ready),
+
+      // .i_new_frame     (s_frame |s_btn_trig[1]),
+      .i_new_frame     (s_frame),
+
+      .o_sdram_clk     (sdram_clk),
+      .o_sdram_cke     (sdram_cke),
+      .o_sdram_we_n    (sdram_wen),
+      .o_sdram_cs_n    (sdram_csn),
+      .o_sdram_ras_n   (sdram_rasn),
+      .o_sdram_cas_n   (sdram_casn),
+      .o_sdram_addr    (sdram_a),
+      .o_sdram_ba      (sdram_ba),
+      .o_sdram_dqm     (sdram_dqm),
+      .b_sdram_dq      (sdram_d),
+
+      .o_sdram_initialized(s_sdram_init_done),
+
+      .i_debug_trig    (s_btn_trig[2:1]),
+      // .i_debug_trig    ({btn[6],s_btn_trig[1]}),
+      .o_debug_status  (s_debug_status)
+
+    );
+
+    // logic [7:0] s_sdram_done_sync;
+    // assign s_sdram_done = s_sdram_done_sync[7];
+    // always_ff @(posedge s_clk_sys) begin
+    //     if (s_rst) s_sdram_done_sync <= '0;
+    //     else s_sdram_done_sync <= {s_sdram_done_sync[6:0], s_sdram_init_done};
+    // end
+
+    //--------------------------------------------------------------------------------
+    // CAMERA WIRING
+    //--------------------------------------------------------------------------------
     //camera inputs
     assign s_camera.clk_in = s_clk_pixel; //input
     // assign s_camera.rst = 1'b1; //reset active low
@@ -146,9 +237,9 @@ module top #(
     assign s_camera.data[2] = gn5;
     assign s_camera.data[0] = gn6;
 
-    // assign led[7:1] = s_camera.data[7:1]; //LA OV Data lines
-    // assign led[0] = s_camera.href;
-    //Logic analyzer debug
+    //--------------------------------------------------------------------------------
+    // LOGIC ANALYZER DEBUGGING
+    //--------------------------------------------------------------------------------
     assign gp14 = s_camera.sda; //LA i2c
     assign gn14 = s_camera.scl; //LA i2c
     assign gp15 = s_camera.vsync;
@@ -172,75 +263,153 @@ module top #(
     assign gn19 = led[1]; //LA OV Data lines
     assign gn20 = led[0]; //LA OV Data lines
 
-    logic [p_num_states-1:0] s_demo_state;
-    logic s_hsync[2], s_vsync[2], s_de[2];
-    // logic s_hsync;
-    // logic s_vsync;
-    // logic s_de;
-    logic s_frame;
-    logic s_line;
-    logic [7:0] s_colors [3];
-    logic [7:0] s_colors_test [3];
-    logic [7:0] s_colors_cam[3];
-    logic [7:0] s_colors3 [3];
-    logic signed [15:0] s_x_pos;
-    logic signed [15:0] s_y_pos;
 
-    camera_top #(
-      // .p_scaler(2)
-      )inst_camera_top (
-      .i_clk(s_clk_pixel),
-      .i_rst(s_rst),
-      .i_camera(s_camera),
-      .o_hsync (s_hsync[0]),
-      .o_vsync (s_vsync[0]),
-      .o_de(s_de[0]),
-      // .led(led),
-      .vga_x_pos,
-      .vga_y_pos,
-      .i_toggle(s_btn_trig[3]),
-      .o_data(s_colors)
+    //--------------------------------------------------------------------------------
+    // OV7670 CAMERA DATA READ/CAPTURE
+    //--------------------------------------------------------------------------------
+ 
+    // assign led = row[8:1];
+    // assign led = row>>0;
+    // assign led = row_max>>2;
+    // assign led = col>>0;
+    // assign led = {col, s_camera.clk_pixel,s_camera.vsync, s_camera.href, s_rst, s_wr_fifo_valid};
+    // assign led = col_max>>2;
+    // assign led = {|row[9:6],row[5:0],s_wr_fifo_valid};
+    //
+    // always_ff @(posedge s_camera.clk_pixel) led <= col_max>>2;
+    camera_read inst_camera_read (
+      .i_clk       (s_camera.clk_pixel), //data is run on the pixel clock from the camera
+      .i_rst       (s_rst),
+      .i_vsync     (s_camera.vsync),
+      .i_href      (s_camera.href),
+      .i_data      (s_camera.data),
+      .o_valid     (s_wr_fifo_valid),
+      .o_data      (s_wr_fifo_data),
+      .o_row_max   (row_max),
+      .o_col_max   (col_max),
+      .o_row       (row),
+      .o_col       (col)
     );
 
-    always_ff @(posedge s_clk_pixel) begin
-      s_hsync[1] <= s_hsync[0];
-      s_vsync[1] <= s_vsync[0];
-      s_de[1] <= s_de[0];
+    //--------------------------------------------------------------------------------
+    // VGA FRAME GENERATION
+    //--------------------------------------------------------------------------------
+    logic s_hsync;
+    logic s_vsync;
+    logic s_de;
+    logic s_line;
+    logic [7:0] s_colors [3];
+
+    logic s_vga_enable;
+
+    always_ff @(posedge s_clk_sys) begin
+      if(s_rst) s_vga_enable <= '0;
+      else if (s_btn_trig[5] | s_rd_fifo_valid) s_vga_enable <= 1'b1;
+      // else if (s_btn_trig[5] ) s_vga_enable <= 1'b1;
     end
+    vga_gen inst_vga_gen (
+      .i_clk_pixel (s_clk_sys),
+      .i_rst       (s_rst | ~s_vga_enable),
+      .o_hsync     (s_hsync),
+      .o_vsync     (s_vsync),
+      .o_frame     (s_frame),
+      .o_line      (s_line),
+      .o_data_en   (s_de),
+      .o_data_test (s_colors_test),
+      .o_x_pos     (vga_x_pos),
+      .o_y_pos     (vga_y_pos)
+    );
 
-    assign led = {i_fb_rd_addr, s_vsync[1], s_hsync[1], s_de[1]};
 
-    // assign s_colors3[0] = s_colors[0];
-    // assign s_colors3[1] = s_colors[1];
-    // assign s_colors3[2] = s_colors[2];
-    // assign s_colors3[0] = o_fb_rd_data>>1;
-    // assign s_colors3[1] = o_fb_rd_data>>1;
-    // assign s_colors3[2] = o_fb_rd_data>>1;
 
-    // assign i_fb_rd_addr = vga_x_pos/20 + vga_y_pos/20;
-    // assign i_fb_rd_valid = 1'b1;
-    always_comb begin
-      logic [15:0] v_x_pos, v_y_pos;
-      v_x_pos = vga_x_pos>>3;
-      v_y_pos = vga_y_pos>>3;
+    logic [$clog2(640*480):0] s_pixel_count;
+    logic s_update_init;
+    logic s_update_frame;
+    wire x_de = ~vga_x_pos[15];
+    wire y_de = ~vga_y_pos[15];
+    assign s_rd_fifo_ready = s_de;
+    // assign s_rd_fifo_ready = s_de & x_de & y_de & (vga_x_pos < 512) & (vga_y_pos < 400);
+    // assign s_rd_fifo_ready = s_de & ((vga_x_pos >= 512) & (vga_y_pos == 0)) & y_de & x_de;
 
-      //32-x for v flip
-      i_fb_rd_addr = v_y_pos*'d32 + (32-v_x_pos);
-      // i_fb_rd_addr = v_y_pos*'d32 + (v_x_pos);
-      i_fb_rd_valid = 1'b1;
 
-      if ((v_x_pos < 32) & (v_y_pos < 24)) begin
-      // i_fb_rd_valid = s_de;
-        s_colors3[0] = o_fb_rd_data;
-        s_colors3[1] = o_fb_rd_data;
-        s_colors3[2] = o_fb_rd_data;
-        // s_colors3[2] = '1;
+
+
+    // always_ff @(posedge s_clk_sys) s_rd_fifo_ready <= s_de;
+
+    // always_ff @(posedge s_clk_sys) begin
+    //
+    //   if (s_rst) begin
+    //     s_update_frame <= '0;
+    //     s_update_init <= '0;
+    //     // s_rd_fifo_ready <= '0;
+    //   end
+    //   else begin
+    //     if (s_btn_trig[5]) s_update_init <= '1;
+    //
+    //     if (s_frame) begin
+    //       s_pixel_count <= '0;
+    //       s_update_init <= '0;
+    //       s_update_frame <= s_update_init;
+    //       // if (s_update_init) s_update_frame <= '1;
+    //     end
+    //
+    //     // if (s_pixel_count <= 'd600) begin
+    //     //   s_update_frame <= '0;
+    //     //   s_update_init <= '0;
+    //     // end
+    //     if (s_de) s_pixel_count <= s_pixel_count + 1'b1;
+    //     // s_rd_fifo_ready <= s_de & (s_pixel_count <= 'd600);
+    //     //
+    //     // s_rd_fifo_ready <= s_de & s_update_frame;
+    //     // s_rd_fifo_ready <= s_de;
+    //     // s_rd_fifo_ready <= s_de & (s_pixel_count <= 'd600);
+    //   end
+    //
+    //
+    // end
+
+    wire [7:0] r_color = { s_rd_fifo_data [15:11], 3'b000};
+    wire [7:0] g_color = { s_rd_fifo_data [10:5], 2'b000};
+    wire [7:0] b_color = { s_rd_fifo_data [4:0], 3'b000};
+    assign s_colors[2] = r_color;
+    assign s_colors[1] = g_color;
+    assign s_colors[0] = b_color;
+    // assign s_colors[2] = '0;
+    // assign s_colors[1] = '0;
+    // assign s_colors[0] = vga_y_pos[4:0]<<3;
+
+    // assign led =
+    //   s_debug_status;
+      // {s_wr_fifo_data ,s_wr_fifo_valid};
+      // // {s_wr_fifo_valid, s_wr_fifo_ready,s_debug_status[5:0] };
+      // {s_wr_fifo_valid, s_wr_fifo_ready, 1'b0, s_rd_fifo_valid, s_rd_fifo_ready,s_de,s_vsync,s_hsync};
+
+      assign led = {s_debug_status};
+
+    // assign led = {s_debug_status, s_rd_fifo_valid, s_rd_fifo_ready, s_frame};
+
+    logic [16:0] s_count, s_count_max;
+    logic s_de_latch;
+    // assign led = s_count_max >> 0;
+
+    always_ff @(posedge s_clk_sys) begin
+      s_de_latch <= s_de;
+      if (s_rst) begin
+        s_count <= '0;
+        s_count_max <= '0;
       end else begin
-      // i_fb_rd_valid = 1'b0;
-        s_colors3[0] = s_colors[0];
-        s_colors3[1] = s_colors[1];
-        s_colors3[2] = s_colors[2];
+        if(s_frame) begin
+          s_count <= '0;
+          if (s_count > s_count_max) s_count_max <= s_count;
+        end
+        else if(~s_de_latch & s_de) s_count <= s_count + 1;
+        // else if (s_line) begin
+        //   s_count <= '0;
+        //   if (s_count > s_count_max) s_count_max <= s_count;
+        // end
+        // else if (s_de) s_count <= s_count + 1;
       end
+
     end
 
     //assign the pixel clock to output
@@ -251,24 +420,16 @@ module top #(
       .i_clk_pixel (s_clk_pixel),
       .i_clk_shift (s_clk_shift),
       .i_rst       (s_rst),
-      .i_hsync     (s_hsync[1]),
-      .i_vsync     (s_vsync[1]),
-      .i_blank     (~s_de[1]),
-      .i_data      (s_colors3),
+      .i_hsync     (s_hsync),
+      .i_vsync     (s_vsync),
+      .i_blank     (~s_de),
+      .i_data      (s_colors),
       .o_data_p    (gpdi_dp[2:0])
     );
 
-
-    // assign led[7] = s_clk_pixel;
-    // assign led[6] = s_line;
-    // assign led[6] = 0;
-    // assign led[5] = s_btn_trig[1];
-    // assign led[4] = s_rst;
-    // assign led[3] = s_vsync;
-    // assign led[2] = s_hsync;
-    // assign led[1] = 0;
-    // assign led[3:0] = s_demo_state;
-
+    //--------------------------------------------------------------------------------
+    // BUTTON DEBOUNCING AND PLL CLOCK SETUPS
+    //--------------------------------------------------------------------------------
     generate
       for(genvar i = 0; i < $bits(btn); i++) begin : gen_btn_debounce
         debounce inst_debounce (
@@ -296,15 +457,4 @@ module top #(
           );
       end
     endgenerate
-
-    demo_switch #(
-      .p_states(p_num_states)
-    )inst_demo_switch (
-      .i_clk(s_clk_sys),
-      .i_rst(s_rst),
-      .i_next(s_btn_trig[1]),
-      .i_prev(s_btn_trig[2]),
-      .o_state(s_demo_state)
-    );
-
 endmodule

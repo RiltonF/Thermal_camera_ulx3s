@@ -89,7 +89,7 @@ module vga_gen #(
 
         s_r_next.hsync = p_hsync_polarity ^ ((s_r.x_counter >= c_hsync_start) & (s_r.x_counter < c_hsync_end));
         s_r_next.vsync = p_vsync_polarity ^ ((s_r.y_counter >= c_vsync_start) & (s_r.y_counter < c_vsync_end));
-        s_r_next.data_en = (s_r.x_counter >= c_x_start-1) & (s_r.x_counter < c_x_end) & (s_r.y_counter >= c_y_start) & (s_r.y_counter <= c_y_end);
+        s_r_next.data_en = (s_r.x_counter >= c_x_start-1) & (s_r.x_counter < c_x_end) & (s_r.y_counter >= c_y_start) & (s_r.y_counter < c_y_end);
 
         s_r_next.frame = (s_r.x_counter == (c_x_start - c_control_margin)) & (s_r.y_counter == (c_y_start - c_control_margin));
         s_r_next.line = s_r.x_counter == (c_x_start - c_control_margin);

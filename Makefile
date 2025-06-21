@@ -5,7 +5,7 @@ DEVICE      := 25
 PACKAGE     := CABGA381
 LPF         := src/constraints/ulx3s_v20_edited.lpf
 # SV_SOURCES  := $(wildcard src/**/*.sv) $(wildcard src/*.sv)
-SV_SOURCES  := $(wildcard src/*.sv) $(wildcard src/misc/*.sv) $(wildcard src/mem/*.v) $(wildcard src/*.v)
+SV_SOURCES  := $(wildcard src/*.sv) $(wildcard src/misc/*.sv) $(wildcard src/mem/*.v)
 VHD_SOURCES := $(wildcard src/misc/*.vhd)
 V_SOURCES   := $(wildcard src/**/*.v) $(wildcard src/*.v)
 V_BLACKBOX  := $(wildcard src/misc/*.sv)
@@ -77,7 +77,7 @@ HDL_SOURCES := $(TOP).sv $(CLK_SOURCES) $(V_SOURCES) $(SV_SOURCES)
 $(JSON): $(HDL_SOURCES) | $(BUILD_DIR)
 	$(YOSYS) -l build/yosys.log \
 		-m slang \
-		-p "read_verilog $(CLK_SOURCES) $(VHDL_TO_VERILOG_FILES)" \
+		-p "read_verilog $(CLK_SOURCES) $(VHDL_TO_VERILOG_FILES)" $(V_SOURCES) \
 		-p "read -sv $(SV_MEMORY)" \
 		-p "read_slang --ignore-unknown-modules\
 		-I src/ -I src/memory -I build/clocks \

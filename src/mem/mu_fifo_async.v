@@ -29,7 +29,10 @@ module mu_fifo_async #(
     parameter DW = 32,        // Memory width
     parameter DEPTH = 4,      // FIFO depth
     parameter THRESH_FULL = DEPTH - 1,
-    parameter THRESH_EMPTY = 1
+    parameter THRESH_EMPTY = 1,
+    // local params
+    // The last part is to support DEPTH of 1
+    localparam AW = $clog2(DEPTH) + {31'h0, (DEPTH == 1)}
 ) (  // write port
     input  wire             wr_clk,
     input  wire             wr_nreset,
@@ -37,18 +40,18 @@ module mu_fifo_async #(
     input  wire             wr_valid,      // write fifo
     output wire             wr_ready,      // fifo not full
     output reg              wr_almost_full,
+    output reg [AW:0]       wr_used,
     // read port
     input  wire             rd_clk,
     input  wire             rd_nreset,
-    output reg [DW-1:0]    rd_dout,       // output data (next cycle)
+    output reg [DW-1:0]     rd_dout,       // output data (next cycle)
     input  wire             rd_ready,      // read fifo
     output reg              rd_valid,      // fifo is not empty
-    output reg              rd_almost_empty
+    output reg              rd_almost_empty,
+    output reg [AW:0]       rd_used
+
 );
 
-    // local params
-    // The last part is to support DEPTH of 1
-    localparam AW = $clog2(DEPTH) + {31'h0, (DEPTH == 1)};
 
     /* verilator lint_off UNUSEDSIGNAL */
     // local wires
@@ -75,7 +78,7 @@ module mu_fifo_async #(
     //# WRITE SIDE LOGIC
     //###########################
 
-    always @(posedge wr_clk or negedge wr_nreset)
+    always @(posedge wr_clk )
         if (~wr_nreset) begin
             wr_binptr_mem[AW:0] <= 'b0;
             wr_binptr[AW:0]     <= 'b0;
@@ -114,10 +117,12 @@ module mu_fifo_async #(
     assign wr_fifo_used = wr_binptr - rd_binptr_sync;
     assign wr_almost_full = wr_fifo_used >= THRESH_FULL;
     // always @(posedge wr_clk) wr_almost_full = wr_fifo_used >= THRESH_FULL;
+    // always @(posedge wr_clk) wr_used <= wr_fifo_used;
+    always @(posedge wr_clk) wr_used <= wr_binptr;
 
     reg wr_full;
 
-    always @(posedge wr_clk or negedge wr_nreset)
+    always @(posedge wr_clk )
         if (~wr_nreset)
             wr_full <= 1'b0;
         else
@@ -139,7 +144,7 @@ module mu_fifo_async #(
     //# READ SIDE LOGIC
     //###########################
 
-    always @(posedge rd_clk or negedge rd_nreset)
+    always @(posedge rd_clk )
         if (~rd_nreset) begin
             rd_binptr_mem[AW:0] <= 'b0;
             rd_binptr[AW:0]     <= 'b0;
@@ -159,7 +164,7 @@ module mu_fifo_async #(
         rd_binptr_nxt[AW:0] ^ {1'b0, rd_binptr_nxt[AW:1]};
 
     // Full comparison (gray pointer based)
-    always @(posedge rd_clk or negedge rd_nreset)
+    always @(posedge rd_clk )
         if (~rd_nreset)
             rd_valid <= 1'b0;
         else
@@ -188,6 +193,8 @@ module mu_fifo_async #(
 
     assign rd_fifo_used = wr_binptr_sync - rd_binptr;
     assign rd_almost_empty = rd_fifo_used <= THRESH_EMPTY;
+    // always @(posedge rd_clk) rd_used <= rd_fifo_used;
+    always @(posedge rd_clk) rd_used <= rd_binptr;
 
     //###########################
     //# Dual Port Memory

@@ -21,6 +21,8 @@ module sdram_top #(
     output logic [p_sdram_dataw-1:0] o_rd_fifo_data,
     input  logic                     i_rd_fifo_ready,
 
+    input  logic                     i_new_frame,
+
     //controller to sdram
     output logic                     o_sdram_clk, //180 deg shifted clock
     output logic                     o_sdram_cke,
@@ -32,6 +34,7 @@ module sdram_top #(
     output logic [      c_bankw-1:0] o_sdram_ba,
     output logic [              1:0] o_sdram_dqm,
     inout  wire  [p_sdram_dataw-1:0] b_sdram_dq,
+    input logic [p_sdram_dataw-1:0] i_sdram_dq,
 
     output logic                     o_sdram_initialized,
 
@@ -57,6 +60,13 @@ module sdram_top #(
 
     logic [3:0] s_fifo_debug_events;
 
+    logic s_new_frame_sync;
+    xd xd_frame (
+        .clk_src(i_clk),
+        .clk_dst(s_sdram_clk),
+        .flag_src(i_new_frame),
+        .flag_dst(s_new_frame_sync)
+    );
     //A bit of a hacky way to generate requests based on fifo fill levels
     logic s_wr_req_valid;
     logic s_rd_req_valid;
@@ -67,6 +77,7 @@ module sdram_top #(
     `else
         // almost empty means fill_level <= threshold, if it's more than 512, we
         // send a write request
+        // assign s_wr_req_valid = i_debug_trig[0];
         assign s_wr_req_valid = s_wr_valid & ~s_wr_almost_empty;
         // almost full means fill_level >= threshold, if it's less than 512, we
         // send a read request
@@ -87,12 +98,17 @@ module sdram_top #(
         logic [c_countw-1:0] read_row;
         logic [c_countw-1:0] write_row;
         logic                sdram_ready_latch;
+        logic                read_fifo_reset;
+        logic                new_frame;
+        logic [$clog2(512):0] s_count;
+        logic [$clog2(512):0] s_count_max;
     } t_signals;
 
     t_signals s_r, s_r_next;
 
     `ifndef SIMULATION
         localparam t_signals c_signals_reset = '{default:'0};
+        // localparam t_signals c_signals_reset = '{write_row: 'd590, default:'0};
     `else
         localparam t_signals c_signals_reset = {'0};
         logic                d_busy;
@@ -117,30 +133,52 @@ module sdram_top #(
 
         s_r_next.sdram_ready_latch = s_sdram_ready;
 
+        //Catch the pulse for a new frame
+        if (s_new_frame_sync) begin
+            s_r_next.new_frame = 1'b1;
+        end
+
+        //debug counter
+
+        // if (s_r.new_frame)
+
+
         //debug
         // o_debug_status = {s_r_next.sdram_addr, s_r.busy, s_r.sdram_rw, s_r.sdram_rw_en, s_sdram_ready, s_overflow_addr};
 
         if (~s_r.busy) begin
-            if (s_r.sdram_ready_latch & (s_wr_req_valid | s_rd_req_valid)) begin
+            // if (s_r.sdram_ready_latch & (s_wr_req_valid | s_rd_req_valid)) begin
+            if (s_sdram_ready & (s_wr_req_valid | s_rd_req_valid | s_r.new_frame)) begin
                 s_r_next.busy = 1'b1;
-                s_r_next.sdram_rw_en = 1'b1;
-                s_r_next.sdram_rw = s_rd_req_valid; //give priority to read if both are high
-                s_r_next.sdram_addr = (s_r_next.sdram_rw) ?  s_r.read_row : s_r.write_row; //set row address
                 s_r_next.sdram_ba = '0;
+                s_r_next.sdram_rw_en = 1'b1;
+                s_r_next.sdram_rw = s_rd_req_valid | s_r.new_frame; //give priority to read if both are high
+                if (s_rd_req_valid | s_r.new_frame) begin
+                    //Reset the fifo/pointers and the read row for a new frame
+                    s_r_next.read_row = (s_r.new_frame) ?  '0 : s_r.read_row;
+                    s_r_next.sdram_addr = s_r_next.read_row; //set row address
+                    s_r_next.read_fifo_reset = s_r.new_frame;
+                    s_r_next.new_frame = 1'b0;
+                end else begin
+                    s_r_next.sdram_addr = s_r.write_row; //set row address
+                end
             end
         end else begin
             // s_r_next.sdram_addr = '0; //set col address, controller doesn't have any support for other columns...
             // s_r_next.sdram_rw_en = 1'b0; //Disable new req during operation
             // if (s_sdram_ready) begin
-            if (s_r.sdram_ready_latch == 0) begin
+            // if (s_r.sdram_ready_latch == 0) begin
+                s_r_next.read_fifo_reset = '0;
                 s_r_next.sdram_addr = '0; //set col address, controller doesn't have any support for other columns...
                 s_r_next.sdram_rw_en = 1'b0; //Disable new req during operation
-            end
-            if ((s_sdram_ready == 1) & (s_r.sdram_ready_latch == 0)) begin
+            // end
+            // if ((s_sdram_ready == 1) & (s_r.sdram_ready_latch == 0)) begin
+            if (s_sdram_ready) begin
                 s_r_next.busy = 1'b0;
                 if (s_r.sdram_rw) begin
                     //Read request
-                    s_r_next.read_row = (s_r_next.read_row >= c_full_frame_pages - 1) ? '0 : s_r_next.read_row + 1;
+                    // s_r_next.read_row = (s_r_next.read_row >= c_full_frame_pages - 1) ? '0 : s_r_next.read_row + 1;
+                    s_r_next.read_row ++;
                 end else begin
                     //Write request
                     s_r_next.write_row = (s_r_next.write_row >= c_full_frame_pages - 1 ) ? '0 : s_r_next.write_row + 1;
@@ -148,6 +186,9 @@ module sdram_top #(
             end
         end
     end
+
+    // assign o_debug_status = {s_r.read_row,s_r.sdram_rw ,s_r.sdram_rw_en, s_r.read_fifo_reset, s_r.new_frame, s_new_frame_sync};
+    // assign o_debug_status = {s_r.write_row};
 
     always_ff @(posedge s_sdram_clk) begin
         if (s_sdram_rst) begin
@@ -162,20 +203,20 @@ module sdram_top #(
     end
 
     `ifndef SIMULATION
-    // TODO: Move these debug events to the fifo module...
-    logic s_debug_write_fifo_invalid_write;
-    always_ff @(posedge i_clk_wr_fifo) begin
-        if (i_rst) s_debug_write_fifo_invalid_write <= '0;
-        //Write occured when the ready was low.
-        else if (~o_wr_fifo_ready & i_wr_fifo_valid) s_debug_write_fifo_invalid_write <= 1'b1;
-    end
-    logic s_debug_write_fifo_invalid_read;
-    always_ff @(posedge s_sdram_clk) begin
-        //Read occured when the valid was low. (Might not be always an issue,
-        //dependingon the connected interface request/valid or ready/valid
-        if (s_sdram_rst) s_debug_write_fifo_invalid_read <= '0;
-        else if (s_wr_ready & ~s_wr_valid) s_debug_write_fifo_invalid_read <= 1'b1;
-    end
+    // // TODO: Move these debug events to the fifo module...
+    // logic s_debug_write_fifo_invalid_write;
+    // always_ff @(posedge i_clk_wr_fifo) begin
+    //     if (i_rst) s_debug_write_fifo_invalid_write <= '0;
+    //     //Write occured when the ready was low.
+    //     else if (~o_wr_fifo_ready & i_wr_fifo_valid) s_debug_write_fifo_invalid_write <= 1'b1;
+    // end
+    // logic s_debug_write_fifo_invalid_read;
+    // always_ff @(posedge s_sdram_clk) begin
+    //     //Read occured when the valid was low. (Might not be always an issue,
+    //     //dependingon the connected interface request/valid or ready/valid
+    //     if (s_sdram_rst) s_debug_write_fifo_invalid_read <= '0;
+    //     else if (s_wr_ready & ~s_wr_valid) s_debug_write_fifo_invalid_read <= 1'b1;
+    // end
     mu_fifo_async #(
         .DW(p_sdram_dataw),
         .DEPTH(512*2),
@@ -197,52 +238,71 @@ module sdram_top #(
     );
     // assign o_debug_status = {s_wr_valid,s_wr_ready,s_sdram_clk, ~s_wr_almost_empty, s_sdram_ready};
     // assign o_debug_status = {s_fifo_debug_events ,i_clk_wr_fifo,i_wr_fifo_valid, o_wr_fifo_ready};
-    assign o_debug_status = {s_wr_data, s_wr_valid,s_wr_ready};
+    // assign o_debug_status = {s_wr_data, s_wr_valid,s_wr_ready};
+    // assign o_debug_status = {s_r.write_row};
 
-    // TODO: Move these debug events to the fifo module...
-    logic s_debug_read_fifo_invalid_write;
-    always_ff @(posedge s_sdram_rd_clk) begin
-        if (s_sdram_rd_rst) s_debug_read_fifo_invalid_write <= '0;
-        //Write occured when the ready was low.
-        else if (~s_rd_ready & s_rd_valid) s_debug_read_fifo_invalid_write <= 1'b1;
-    end
-    logic s_debug_read_fifo_invalid_read;
-    always_ff @(posedge i_clk) begin
-        //Read occured when the valid was low. (Might not be always an issue,
-        //dependingon the connected interface request/valid or ready/valid
-        if (i_rst) s_debug_read_fifo_invalid_read <= '0;
-        else if (i_rd_fifo_ready & ~o_rd_fifo_valid) s_debug_read_fifo_invalid_read <= 1'b1;
-    end
+    // // TODO: Move these debug events to the fifo module...
+    // logic s_debug_read_fifo_invalid_write;
+    // always_ff @(posedge s_sdram_rd_clk) begin
+    //     if (s_sdram_rd_rst) s_debug_read_fifo_invalid_write <= '0;
+    //     //Write occured when the ready was low.
+    //     else if (~s_rd_ready & s_rd_valid) s_debug_read_fifo_invalid_write <= 1'b1;
+    // end
+    // logic s_debug_read_fifo_invalid_read;
+    // always_ff @(posedge i_clk) begin
+    //     //Read occured when the valid was low. (Might not be always an issue,
+    //     //dependingon the connected interface request/valid or ready/valid
+    //     if (i_rst) s_debug_read_fifo_invalid_read <= '0;
+    //     else if (i_rd_fifo_ready & ~o_rd_fifo_valid) s_debug_read_fifo_invalid_read <= 1'b1;
+    // end
+    
+    logic s_sdram_rd_fifo_wr_rst;
+    logic s_sdram_rd_fifo_rd_rst;
+    wire [$clog2(512*2):0] s_rd_used;
+    wire [$clog2(512*2):0] s_wr_used;
+
     mu_fifo_async #(
         .DW(p_sdram_dataw),
         // .DEPTH(1) //testing
-        .DEPTH(512*2),
-        .THRESH_FULL(512-64)
+        .DEPTH(512*2*2),
+        .THRESH_FULL(512)
     ) inst_sdram_rd_fifo (
         .wr_clk     (s_sdram_rd_clk),
-        .wr_nreset  (~s_sdram_rd_rst),
+        .wr_nreset  (~s_sdram_rd_fifo_wr_rst),
         .wr_valid   (s_rd_valid),
         .wr_din     (s_rd_data),
         .wr_ready   (s_rd_ready), //no backpressure possible for the sdram read data
+        .wr_used    (s_wr_used),
         .wr_almost_full (s_rd_almost_full),
 
         .rd_clk     (i_clk),
-        .rd_nreset  (~i_rst),
+        .rd_nreset  (~s_sdram_rd_fifo_rd_rst),
         .rd_valid   (o_rd_fifo_valid),
         .rd_dout    (o_rd_fifo_data),
         .rd_ready   (i_rd_fifo_ready),
+        .rd_used    (s_rd_used),
         .rd_almost_empty () //unused
     );
 
-    assign s_fifo_debug_events = {
-        s_debug_read_fifo_invalid_read,
-        s_debug_read_fifo_invalid_write,
-        s_debug_write_fifo_invalid_read,
-        s_debug_write_fifo_invalid_write};
+    // assign s_fifo_debug_events = {
+    //     s_debug_read_fifo_invalid_read,
+    //     s_debug_read_fifo_invalid_write,
+    //     s_debug_write_fifo_invalid_read,
+    //     s_debug_write_fifo_invalid_write};
 
+    // assign o_debug_status = {|s_wr_used, s_sdram_rd_fifo_wr_rst, s_sdram_rd_fifo_rd_rst, s_sdram_rd_fifo_wr_rst,s_sdram_clk, |s_wr_used, |s_rd_used, s_rd_valid};
+    // assign o_debug_status = {o_rd_fifo_valid, s_sdram_rd_fifo_rd_rst, s_sdram_rd_fifo_wr_rst, s_r.read_fifo_reset};
+    // assign o_debug_status = {s_r.busy, s_sdram_rd_fifo_rd_rst, s_sdram_ready, s_r.new_frame, s_rd_valid, o_rd_fifo_valid};
+    // assign o_debug_status = {s_rd_used,i_clk};
+    // assign o_debug_status = {s_wr_used,s_sdram_rd_clk, o_rd_fifo_valid};
     // assign o_debug_status = s_fifo_debug_events;
     // assign o_debug_status = {s_rd_ready, s_rd_valid, s_sdram_rd_clk, i_rd_fifo_ready,o_rd_fifo_valid, i_clk, i_debug_trig[1]};
 
+    // assign o_debug_status = {|b_sdram_dq[15:6], b_sdram_dq[5:0], s_r.sdram_rw_en};
+    // assign o_debug_status = {|s_wr_data[15:6], s_wr_data[5:0], s_r.sdram_rw_en};
+    // assign o_debug_status = {i_wr_fifo_data>>3,i_wr_fifo_valid};
+    // assign o_debug_status = {s_wr_data >>3,s_r.sdram_rw_en};
+    // assign o_debug_status = {|i_wr_fifo_data[15:6], i_wr_fifo_data[5:0],i_wr_fifo_valid};
     sdram_controller inst_sdram_controller (
         //fpga to controller
         .clk            (s_sdram_clk), //clk=143MHz
@@ -271,23 +331,79 @@ module sdram_top #(
         .s_dq           (b_sdram_dq)
     );
 
+    logic [16:0] s_count, s_count_max;
+    assign o_debug_status = s_count_max >> 0;
+    // assign o_debug_status = s_r.write_row;
+
+    always_ff @(posedge s_sdram_clk) begin
+      if (s_sdram_rst) begin
+        s_count <= '0;
+        s_count_max <= '0;
+      end else begin
+        if(s_r.sdram_rw_en) begin
+          s_count <= '0;
+          // if (s_count > s_count_max) s_count_max <= s_count;
+          if (s_r.write_row> s_count_max) s_count_max <= s_r.write_row;
+        end
+        // else if(s_rd_valid) s_count <= s_count + 1;
+      end
+
+    end
     clk_sdram inst_clk_gen_ddr (
         .clkin(i_clk),
         .clkout0(s_sdram_clk), //142.857 MHz
-        .clkout1(s_sdram_rd_clk), //142.857 MHz +90 deg shift
+        // .clkout1(s_sdram_rd_clk), //142.857 MHz +90 deg shift
         .locked()
     );
+    assign s_sdram_rd_clk = s_sdram_clk;
 
-    reset_sync inst_sdram_reset_sync (
-        .i_clk(s_sdram_clk),
-        .i_async_rst(i_rst),
-        .o_rst(s_sdram_rst)
+    // reset_sync inst_sdram_reset_sync (
+    //     .i_clk(s_sdram_clk),
+    //     .i_async_rst(i_rst),
+    //     .o_rst(s_sdram_rst)
+    // );
+    xd xd_sdram_reset (
+        .clk_src(i_clk),
+        .flag_src(i_rst),
+        .clk_dst(s_sdram_clk),
+        .flag_dst(s_sdram_rst)
     );
-    reset_sync inst_sdram_rd_reset_sync (
-        .i_clk(s_sdram_rd_clk),
-        .i_async_rst(i_rst),
-        .o_rst(s_sdram_rd_rst)
+    // reset_sync inst_sdram_rd_reset_sync (
+    //     .i_clk(s_sdram_rd_clk),
+    //     .i_async_rst(i_rst),
+    //     .o_rst(s_sdram_rd_rst)
+    // );
+    xd xd_sdram_rd_reset (
+        .clk_src(i_clk),
+        .flag_src(i_rst),
+        .clk_dst(s_sdram_rd_clk),
+        .flag_dst(s_sdram_rd_rst)
     );
+
+    xd xd_wr_reset (
+        .clk_src(s_sdram_clk),
+        .clk_dst(s_sdram_rd_clk),
+        .flag_src(s_r.read_fifo_reset),
+        .flag_dst(s_sdram_rd_fifo_wr_rst)
+    );
+    // reset_sync inst_sdram_rd_fifo_wr_rst (
+    //     .i_clk(s_sdram_rd_clk),
+    //     .i_async_rst(s_r.read_fifo_reset | i_debug_trig[0]),
+    //     // .i_async_rst(s_r.read_fifo_reset),
+    //     .o_rst(s_sdram_rd_fifo_wr_rst)
+    // );
+    xd xd_rd_reset (
+        .clk_src(s_sdram_clk),
+        .clk_dst(i_clk),
+        .flag_src(s_r.read_fifo_reset),
+        .flag_dst(s_sdram_rd_fifo_rd_rst)
+    );
+    // reset_sync inst_sdram_rd_fifo_rd_rst (
+    //     .i_clk(i_clk),
+    //     .i_async_rst(s_r.read_fifo_reset | i_debug_trig[0]),
+    //     // .i_async_rst(s_r.read_fifo_reset),
+    //     .o_rst(s_sdram_rd_fifo_rd_rst)
+    // );
     `endif
 endmodule
 

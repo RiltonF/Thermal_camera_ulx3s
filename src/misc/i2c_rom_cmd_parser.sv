@@ -8,6 +8,7 @@ module i2c_rom_cmd_parser #(
     parameter int p_slave_addr = 'h21,
     parameter bit p_wr_mode = 1'b1,
     parameter int p_rom_addr_width = 8,
+    parameter bit p_auto_init = 1'b1,
     parameter int p_delay_const = 2**25-1
 ) (
     input  logic i_clk,
@@ -84,7 +85,7 @@ module i2c_rom_cmd_parser #(
         case(s_r.state)
             IDLE: begin
                 s_r_next.done = 1'b0;
-                if (i_start | ~s_r.init) begin
+                if (i_start | (~s_r.init & p_auto_init) ) begin
                     s_r_next.addr = '0;
                     s_r_next.state = CMD_LOAD;
                 end

@@ -1,21 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Wed Jun 18 09:29:08 2025
+[*] Fri Jun 20 22:13:03 2025
 [*]
 [dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
-[dumpfile_mtime] "Wed Jun 18 09:18:25 2025"
-[dumpfile_size] 2187
+[dumpfile_mtime] "Fri Jun 20 22:03:02 2025"
+[dumpfile_size] 6221
 [savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_mu_fifo_async.gtkw"
-[timestart] 290300
+[timestart] 996000
 [size] 2560 1358
 [pos] -1 -1
-*-15.266236 440000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-16.266235 1250000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_mu_fifo_async.
-[treeopen] tb_mu_fifo_async.dut.
+[treeopen] tb_mu_fifo_async.dut.genblk1[0].
 [sst_width] 274
 [signals_width] 380
 [sst_expanded] 1
-[sst_vpaned_height] 423
+[sst_vpaned_height] 297
 @420
 tb_mu_fifo_async.dut.AW
 tb_mu_fifo_async.dut.DEPTH
@@ -23,55 +23,41 @@ tb_mu_fifo_async.dut.DW
 tb_mu_fifo_async.dut.THRESH_EMPTY
 tb_mu_fifo_async.dut.THRESH_FULL
 @28
-tb_mu_fifo_async.dut.rd_binptr[2:0]
-tb_mu_fifo_async.dut.rd_binptr_mem[2:0]
-tb_mu_fifo_async.dut.rd_binptr_mem_nxt[2:0]
-tb_mu_fifo_async.dut.rd_binptr_nxt[2:0]
-tb_mu_fifo_async.dut.rd_binptr_sync[2:0]
-tb_mu_fifo_async.dut.rd_clk
-@24
 [color] 7
-tb_mu_fifo_async.dut.rd_fifo_used[2:0]
-@28
-tb_mu_fifo_async.dut.rd_grayptr[2:0]
-tb_mu_fifo_async.dut.rd_grayptr_nxt[2:0]
-tb_mu_fifo_async.dut.rd_grayptr_sync[2:0]
 tb_mu_fifo_async.dut.rd_nreset
 @200
 -
 @28
-tb_mu_fifo_async.dut.wr_binptr[2:0]
-tb_mu_fifo_async.dut.wr_binptr_mem[2:0]
-tb_mu_fifo_async.dut.wr_binptr_mem_nxt[2:0]
-tb_mu_fifo_async.dut.wr_binptr_nxt[2:0]
-tb_mu_fifo_async.dut.wr_binptr_sync[2:0]
 tb_mu_fifo_async.dut.wr_clk
-@24
 [color] 7
-tb_mu_fifo_async.dut.wr_fifo_used[2:0]
-@28
 tb_mu_fifo_async.dut.wr_full
-tb_mu_fifo_async.dut.wr_grayptr[2:0]
-tb_mu_fifo_async.dut.wr_grayptr_nxt[2:0]
-tb_mu_fifo_async.dut.wr_grayptr_sync[2:0]
 tb_mu_fifo_async.dut.wr_nreset
 @200
 -
 @28
 tb_mu_fifo_async.dut.wr_valid
-@22
-tb_mu_fifo_async.dut.wr_din[31:0]
-@28
 tb_mu_fifo_async.dut.wr_almost_full
 tb_mu_fifo_async.dut.wr_ready
 @200
 -
 @28
+tb_mu_fifo_async.dut.rd_clk
+@29
 tb_mu_fifo_async.dut.rd_valid
-@25
-tb_mu_fifo_async.dut.rd_dout[31:0]
 @28
 tb_mu_fifo_async.dut.rd_almost_empty
 tb_mu_fifo_async.dut.rd_ready
+@200
+-
+@24
+tb_mu_fifo_async.dut.wr_binptr[5:0]
+tb_mu_fifo_async.dut.rd_binptr[5:0]
+@200
+-
+@24
+tb_mu_fifo_async.dut.rd_fifo_used[5:0]
+@28
+tb_mu_fifo_async.rst_rd
+tb_mu_fifo_async.rst_wr
 [pattern_trace] 1
 [pattern_trace] 0

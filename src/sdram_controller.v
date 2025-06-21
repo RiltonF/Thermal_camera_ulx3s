@@ -102,7 +102,7 @@ module sdram_controller(
 	reg[3:0] nxt_q,nxt_d; //state after next state
 	reg[3:0] cmd_q,cmd_d; //{cs_n,ras_n,cas_n,we_n}
 	reg[15:0] delay_ctr_q,delay_ctr_d; //stores delay needed(max is 200us for the initialization sequence)
-	reg[10:0] refresh_ctr_q,refresh_ctr_d; 
+	reg[10:0] refresh_ctr_q=0,refresh_ctr_d; 
 	reg refresh_flag_q,refresh_flag_d;
 	reg[9:0] burst_index_q=0,burst_index_d; //stores the data left to be burst(512 for full page burst)
 	reg rw_d,rw_q,rw_en_q,rw_en_d;
@@ -350,6 +350,7 @@ module sdram_controller(
 	assign s2f_data_valid=s2f_data_valid_q;
 	
 	
+	// assign s_dq=tri_q? f2s_data_q:16'hzzzz; //tri-state output,tri=1 for write , tri=0 for read(hi-Z)
 	// genvar i;
 	// generate
 	// 	for(i=0;i<16;i=i+1) begin
