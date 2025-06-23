@@ -26,8 +26,8 @@ module simple_widthadapt_1_to_x #(
     always_comb begin
         s_full = s_fill_counter >= p_x; //when full
 
-        o_ready = ~s_full;
-        o_valid = s_full | (s_full & i_ready);
+        o_ready = ~s_full | (s_full & i_ready);
+        o_valid = s_full;
 
         for (int i = 0; i < p_x; i++) begin
             o_data[i*p_iwidth +: p_iwidth] = o_data_array[i];

@@ -78,7 +78,7 @@ module mu_fifo_async #(
     //# WRITE SIDE LOGIC
     //###########################
 
-    always @(posedge wr_clk )
+    always @(posedge wr_clk or negedge wr_nreset)
         if (~wr_nreset) begin
             wr_binptr_mem[AW:0] <= 'b0;
             wr_binptr[AW:0]     <= 'b0;
@@ -117,12 +117,11 @@ module mu_fifo_async #(
     assign wr_fifo_used = wr_binptr - rd_binptr_sync;
     assign wr_almost_full = wr_fifo_used >= THRESH_FULL;
     // always @(posedge wr_clk) wr_almost_full = wr_fifo_used >= THRESH_FULL;
-    // always @(posedge wr_clk) wr_used <= wr_fifo_used;
-    always @(posedge wr_clk) wr_used <= wr_binptr;
+    always @(posedge wr_clk) wr_used <= wr_fifo_used;
 
     reg wr_full;
 
-    always @(posedge wr_clk )
+    always @(posedge wr_clk or negedge wr_nreset)
         if (~wr_nreset)
             wr_full <= 1'b0;
         else
@@ -144,7 +143,7 @@ module mu_fifo_async #(
     //# READ SIDE LOGIC
     //###########################
 
-    always @(posedge rd_clk )
+    always @(posedge rd_clk or negedge rd_nreset)
         if (~rd_nreset) begin
             rd_binptr_mem[AW:0] <= 'b0;
             rd_binptr[AW:0]     <= 'b0;
@@ -164,7 +163,7 @@ module mu_fifo_async #(
         rd_binptr_nxt[AW:0] ^ {1'b0, rd_binptr_nxt[AW:1]};
 
     // Full comparison (gray pointer based)
-    always @(posedge rd_clk )
+    always @(posedge rd_clk or negedge rd_nreset)
         if (~rd_nreset)
             rd_valid <= 1'b0;
         else
@@ -193,8 +192,7 @@ module mu_fifo_async #(
 
     assign rd_fifo_used = wr_binptr_sync - rd_binptr;
     assign rd_almost_empty = rd_fifo_used <= THRESH_EMPTY;
-    // always @(posedge rd_clk) rd_used <= rd_fifo_used;
-    always @(posedge rd_clk) rd_used <= rd_binptr;
+    always @(posedge rd_clk) rd_used <= rd_fifo_used;
 
     //###########################
     //# Dual Port Memory
@@ -208,7 +206,7 @@ module mu_fifo_async #(
             ram[wr_binptr_mem[AW-1:0]] <= wr_din[DW-1:0];
 
     always @(posedge rd_clk)
-        rd_dout[DW-1:0] <= ram[rd_binptr_mem[AW-1:0]];
+        rd_dout[DW-1:0] <= ram[rd_binptr_mem_nxt[AW-1:0]];
     // Read port (FIFO output)
     // assign rd_dout[DW-1:0] = ram[rd_binptr_mem[AW-1:0]];
 
