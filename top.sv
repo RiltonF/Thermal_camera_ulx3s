@@ -148,54 +148,65 @@ module top #(
     logic s_sdram_init_done;
 
     logic s_frame;
+    logic s_line;
 
     
 
-    logic [15:0] s_counter;
+    logic [2:0] s_counter;
     always_ff @(posedge s_clk_sys) begin
       if (s_rst) begin
-        s_counter <= '0;
+        s_counter <= '1;
       end else begin
-        if(s_wr_fifo_ready&s_wr_fifo_valid) s_counter <= s_counter + 1;
+        // if(s_wr_fifo_ready&s_wr_fifo_valid) s_counter <= s_counter + 1;
+        if(s_btn_trig[2]) s_counter <= s_counter - 1;
       end
     end
 
-    sdram_top #(
-      .p_sdram_dataw (16)
+    logic s_dram_clk;
+    sdram_top_new #(
+      // .p_clock_feq()
     ) inst_sdram_top (
-      .i_clk           (s_clk_sys),
+      .i_dram_clk           (s_dram_clk),
       .i_rst           (s_rst),
-
+      
       .i_clk_wr_fifo   (s_camera.clk_pixel),
-      .i_wr_fifo_valid (s_wr_fifo_valid),
+      // .i_wr_fifo_valid (s_wr_fifo_valid),
       // .i_wr_fifo_data  (s_wr_fifo_data),
-      .i_wr_fifo_data  (col[6:0]<<5),
+      // .i_wr_fifo_data  (col[6:0]<<5),
       // .i_wr_fifo_data  (s_counter),
       // .i_wr_fifo_data  (row[4:0]),
       // .i_wr_fifo_valid ('1),
       // .i_wr_fifo_data  ({5'b11111,11'b0}),
-      // .i_wr_fifo_data  ({5'b11111}),
+      .i_wr_fifo_valid (s_btn_trig[2]),
+      // .i_wr_fifo_data  ({5'b10101}),
+      // .i_wr_fifo_data  ({5'b10101}),
+      .i_wr_fifo_data  (s_counter),
+      // .i_wr_fifo_data  ('1),
       .o_wr_fifo_ready (s_wr_fifo_ready),
 
+      .i_clk_rd_fifo   (s_clk_sys), //VGA module reads this
       .o_rd_fifo_valid (s_rd_fifo_valid),
       .o_rd_fifo_data  (s_rd_fifo_data),
       .i_rd_fifo_ready (s_rd_fifo_ready),
+      // .i_rd_fifo_ready (1),
 
-      // .i_new_frame     (s_frame |s_btn_trig[1]),
-      .i_new_frame     (s_frame),
+      .i_new_line     (s_line|s_btn_trig[1]),
+      // .i_new_frame     (s_frame),
 
-      .o_sdram_clk     (sdram_clk),
-      .o_sdram_cke     (sdram_cke),
-      .o_sdram_we_n    (sdram_wen),
-      .o_sdram_cs_n    (sdram_csn),
-      .o_sdram_ras_n   (sdram_rasn),
-      .o_sdram_cas_n   (sdram_casn),
-      .o_sdram_addr    (sdram_a),
-      .o_sdram_ba      (sdram_ba),
-      .o_sdram_dqm     (sdram_dqm),
-      .b_sdram_dq      (sdram_d),
+      .o_dram_clk     (),
+      .o_dram_cke     (sdram_cke),
+      .o_dram_we_n    (sdram_wen),
+      .o_dram_cs_n    (sdram_csn),
+      .o_dram_ras_n   (sdram_rasn),
+      .o_dram_cas_n   (sdram_casn),
+      .o_dram_addr    (sdram_a),
+      .o_dram_ba      (sdram_ba),
+      .o_dram_udqm    (sdram_dqm[1]),
+      .o_dram_ldqm    (sdram_dqm[0]),
+      .io_dram_data   (sdram_d),
 
-      .o_sdram_initialized(s_sdram_init_done),
+
+      .o_dram_initialized(s_sdram_init_done),
 
       .i_debug_trig    (s_btn_trig[2:1]),
       // .i_debug_trig    ({btn[6],s_btn_trig[1]}),
@@ -203,13 +214,26 @@ module top #(
 
     );
 
-    // logic [7:0] s_sdram_done_sync;
-    // assign s_sdram_done = s_sdram_done_sync[7];
-    // always_ff @(posedge s_clk_sys) begin
-    //     if (s_rst) s_sdram_done_sync <= '0;
-    //     else s_sdram_done_sync <= {s_sdram_done_sync[6:0], s_sdram_init_done};
-    // end
+    logic [7:0] s_sdram_done_sync;
+    assign s_sdram_done = s_sdram_done_sync[7];
+    always_ff @(posedge s_clk_sys) begin
+        if (s_rst) s_sdram_done_sync <= '0;
+        else s_sdram_done_sync <= {s_sdram_done_sync[6:0], s_sdram_init_done};
+    end
 
+    clk_sdram inst_clk_gen_ddr (
+        .clkin(clk_25mhz),
+        .clkout0(s_dram_clk), //142.857 MHz
+        // .clkout1(s_sdram_rd_clk), //142.857 MHz +90 deg shift
+        .locked()
+    );
+    //(clk input to sdram) is 180 degrees lagging from main clock to solve the hold-setup time requirements of sdram
+    ODDRX1F oddr_primitive (
+        .D0(1'b0), //1'b0
+        .D1(1'b1), //1'b1
+        .SCLK(s_dram_clk),
+        .Q(sdram_clk)
+    );
     //--------------------------------------------------------------------------------
     // CAMERA WIRING
     //--------------------------------------------------------------------------------
@@ -297,15 +321,14 @@ module top #(
     logic s_hsync;
     logic s_vsync;
     logic s_de;
-    logic s_line;
     logic [7:0] s_colors [3];
 
     logic s_vga_enable;
 
     always_ff @(posedge s_clk_sys) begin
       if(s_rst) s_vga_enable <= '0;
-      else if (s_btn_trig[5] | s_rd_fifo_valid) s_vga_enable <= 1'b1;
-      // else if (s_btn_trig[5] ) s_vga_enable <= 1'b1;
+      // else if (s_btn_trig[5] | s_sdram_done_sync) s_vga_enable <= 1'b1;
+      else if (s_btn_trig[5] ) s_vga_enable <= 1'b1;
     end
     vga_gen inst_vga_gen (
       .i_clk_pixel (s_clk_sys),
@@ -384,9 +407,11 @@ module top #(
       // // {s_wr_fifo_valid, s_wr_fifo_ready,s_debug_status[5:0] };
       // {s_wr_fifo_valid, s_wr_fifo_ready, 1'b0, s_rd_fifo_valid, s_rd_fifo_ready,s_de,s_vsync,s_hsync};
 
-      assign led = {s_debug_status};
+      // assign led = {s_debug_status[7:0] };
 
-    // assign led = {s_debug_status, s_rd_fifo_valid, s_rd_fifo_ready, s_frame};
+    // assign led = {s_debug_status, s_rd_fifo_valid, s_rd_fifo_ready, s_btn_trig[1]};
+    assign led = {s_rd_fifo_data , s_clk_sys,s_rd_fifo_valid&s_rd_fifo_ready};
+    // assign led = {s_rd_fifo_data ,s_rd_fifo_valid,s_clk_sys, s_de,s_line};
 
     logic [16:0] s_count, s_count_max;
     logic s_de_latch;
