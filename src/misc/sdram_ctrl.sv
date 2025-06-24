@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 // TODO: ADD ASYNC FIFO. Also, do we need a FIFO? Obviously on a system with a different main clock frequency than the SDRAM's, but is that common?
 module sdram_ctrl #(
-  parameter logic       AutoPrecharge    = 0,            // 1 if enabled, 0 if disabled
+  parameter logic       AutoPrecharge    = 1,            // 1 if enabled, 0 if disabled
   parameter             BurstLength      = 8,            // How many values do we read & write? Supported values: 1, 2, 4, 8
   parameter             RowWidth         = 13,
   parameter             ColWidth         = 9,
@@ -46,6 +46,7 @@ module sdram_ctrl #(
   output logic [DataWidth-1:0]  o_rd_data,
 
   output logic o_debug,
+  output logic [IAddrWidth-1:0] o_debug_addr,    /* {Bank, Col, Row} */
   /* ----- SDRAM signals ----- */
   /* These are IOB Packed */
   output logic [OAddrWidth-1:0] o_dram_addr,  /* Read/Write Address */
@@ -89,24 +90,29 @@ module sdram_ctrl #(
   logic [ColWidth-1:0]  rd_col, wr_col;
   logic [RowWidth-1:0]  rd_row, wr_row;
 
-  logic [IAddrWidth-1:0] s_req_addr, s_req_addr_next;    /* {Bank, Col, Row} */
+  logic [IAddrWidth-1:0] s_req_wr_addr, s_req_rd_addr;    /* {Bank, Col, Row} */
 
-  assign rd_bank = s_req_addr[IAddrWidth-1:ColWidth+RowWidth];
-  assign wr_bank = s_req_addr[IAddrWidth-1:ColWidth+RowWidth];
+  assign rd_bank = s_req_rd_addr[IAddrWidth-1:ColWidth+RowWidth];
+  assign rd_row  = s_req_rd_addr[RowWidth-1:0];
+  assign rd_col  = s_req_rd_addr[RowWidth+ColWidth-1:RowWidth];
 
-  assign rd_col  = s_req_addr[RowWidth+ColWidth-1:RowWidth];
-  assign wr_col  = s_req_addr[RowWidth+ColWidth-1:RowWidth];
+  assign wr_bank = s_req_wr_addr[IAddrWidth-1:ColWidth+RowWidth];
+  assign wr_row  = s_req_wr_addr[RowWidth-1:0];
+  assign wr_col  = s_req_wr_addr[RowWidth+ColWidth-1:RowWidth];
 
-  assign rd_row  = s_req_addr[RowWidth-1:0];
-  assign wr_row  = s_req_addr[RowWidth-1:0];
 
-  logic [BankWidth-1:0] rd_req_bank, wr_req_bank;
-  logic [RowWidth-1:0]  rd_req_row,  wr_req_row;
-  assign rd_req_bank = i_rd_addr[IAddrWidth-1:ColWidth+RowWidth];
-  assign wr_req_bank = i_wr_addr[IAddrWidth-1:ColWidth+RowWidth];
-  assign rd_req_row  = i_rd_addr[RowWidth-1:0];
-  assign wr_req_row  = i_wr_addr[RowWidth-1:0];
+  // logic [BankWidth-1:0] rd_req_bank, wr_req_bank;
+  // logic [RowWidth-1:0]  rd_req_row,  wr_req_row;
+  //
+  // assign rd_req_bank = i_rd_addr[IAddrWidth-1:ColWidth+RowWidth];
+  // assign wr_req_bank = i_wr_addr[IAddrWidth-1:ColWidth+RowWidth];
+  // assign rd_req_row  = i_rd_addr[RowWidth-1:0];
+  // assign wr_req_row  = i_wr_addr[RowWidth-1:0];
 
+
+  // assign o_debug_addr = i_wr_addr[RowWidth+ColWidth-1:RowWidth];
+  // assign o_debug_addr = wr_col;
+  assign o_debug_addr = rd_row;
 
   // assign rd_bank = i_rd_addr[IAddrWidth-1:ColWidth+RowWidth];
   // assign wr_bank = i_wr_addr[IAddrWidth-1:ColWidth+RowWidth];
@@ -129,16 +135,17 @@ module sdram_ctrl #(
 
   /* dram_cmd_t = {CS, RAS, CAS, WE} */
   typedef enum logic [3:0] {
-    CMD_NOP      = 4'b1zzz,
+    // CMD_NOP      = 4'b1zzz,
+    CMD_NOP      = 4'b0111,
+    CMD_ACT      = 4'b0011,
     CMD_RD_RDA   = 4'b0101,
     CMD_WR_WRA   = 4'b0100,
-    CMD_ACT      = 4'b0011,
     CMD_PRE_PALL = 4'b0010,
     CMD_MRS      = 4'b0000,
     CMD_REF      = 4'b0001
   } dram_cmd_t;
   
-  typedef enum logic [5:0] { /* Decrease this bit width to whatever we need at the end */
+  typedef enum { /* Decrease this bit width to whatever we need at the end */
     INIT_RESET,
     INIT_WAIT,
     INIT_PALL,
@@ -149,6 +156,7 @@ module sdram_ctrl #(
     INIT_WAIT_TARFC_2,
     INIT_MRS,
     INIT_WAIT_TMRD,
+    REQ_START,
     RDY_NOP,
     EXEC_REF,
     EXEC_WAIT_TARFC,
@@ -162,6 +170,7 @@ module sdram_ctrl #(
     EXEC_READ_PRECHARGE,
     EXEC_READ_WAIT_TRP,
     EXEC_READ_ACT,
+    EXEC_READ_ACT_SETUP,
     EXEC_READ_WAIT_TRCD,
     EXEC_READ_READ,
     EXEC_READ_WAIT_CAS,
@@ -189,12 +198,21 @@ module sdram_ctrl #(
     if (!i_rst_n) curr_state <= INIT_RESET;
     else          curr_state <= next_state;
 
+  logic s_req_read;
   always_ff @(posedge i_dram_clk)
-    if (!i_rst_n) s_req_addr = '0;
-    else          s_req_addr = s_req_addr_next;
+    if (!i_rst_n) begin
+      s_req_wr_addr <= '0;
+      s_req_rd_addr <= '0;
+      s_req_read <= '0;
+    end
+    else if (curr_state == RDY_NOP) begin
+      if (i_wr_req) s_req_wr_addr <= i_wr_addr;
+      if (i_rd_req) s_req_rd_addr <= i_rd_addr;
+      s_req_read <= i_rd_req;
+    end
   // Next State Logic Controller
   always_comb begin
-    s_req_addr_next = s_req_addr;
+
     unique case (curr_state)
       INIT_RESET:                                                       next_state = INIT_WAIT;
               
@@ -222,25 +240,31 @@ module sdram_ctrl #(
                             else                                        next_state = INIT_WAIT_TMRD;            // @ loopback
         
       RDY_NOP: begin
-                 //load the address 
-                 if (i_wr_req | i_rd_req) s_req_addr_next = i_rd_addr;
-
-                 if (refresh_req)                                     next_state = EXEC_REF;
-                   else if (i_wr_req)
+        if (refresh_req) begin
+          next_state = EXEC_REF;
+        end else begin
+          if(i_wr_req | i_rd_req) begin
+            next_state = REQ_START;
+          end else begin
+            next_state = RDY_NOP;
+          end
+        end
+      end
+      REQ_START: begin
+                   if (~s_req_read) //if 0, write, else read
                      if (AutoPrecharge)                                 next_state = EXEC_WRITE_ACT;
                      else // Here we handle if we should precharge and/or ACT for our write, as we are not autoprecharging
-                       if (!open_rows[wr_req_bank][RowWidth])               next_state = EXEC_WRITE_ACT;
-                       else if (wr_req_row == open_rows[wr_req_bank][RowWidth-1:0] && open_rows[wr_req_bank][RowWidth]) // This multiline is a bit ugly... sorry
+                       if (!open_rows[wr_bank][RowWidth])               next_state = EXEC_WRITE_ACT;
+                       else if (wr_row == open_rows[wr_bank][RowWidth-1:0] && open_rows[wr_bank][RowWidth]) // This multiline is a bit ugly... sorry
                                                                         next_state = EXEC_WRITE_WRITE;      // We are writing to an open row in the same bank, nice! We can skip ACT and Precharging
                        else                                             next_state = EXEC_WRITE_PRECHARGE;  // We are writing to a closed row in same bank :( got to close (precharge) the open one and then bank ACTivate  
-                   else if (i_rd_req)      
-                     if (AutoPrecharge)                                 next_state = EXEC_READ_ACT;
+                   else
+                     if (AutoPrecharge)                                 next_state = EXEC_READ_ACT_SETUP;
                      else // Here we handle if we should precharge and/or ACT for our read, as we are not autoprecharging
-                       if (!open_rows[rd_req_bank][RowWidth])               next_state = EXEC_READ_ACT; // We haven't read from a row in this bank yet as valid bit isn't set. We can skip precharging and just bank ACTivate
-                       else if (rd_req_row == open_rows[rd_req_bank][RowWidth-1:0] && open_rows[rd_req_bank][RowWidth]) // This multiline is also a bit ugly... sorry
+                       if (!open_rows[rd_bank][RowWidth])               next_state = EXEC_READ_ACT_SETUP; // We haven't read from a row in this bank yet as valid bit isn't set. We can skip precharging and just bank ACTivate
+                       else if (rd_row == open_rows[rd_bank][RowWidth-1:0] && open_rows[rd_bank][RowWidth]) // This multiline is also a bit ugly... sorry
                                                                         next_state = EXEC_READ_READ; // We are reading from an open row in the same bank, nice! We can skip ACT and Precharging
                        else                                             next_state = EXEC_READ_PRECHARGE; // We are reading from a closed row in same bank :( got to close (precharge) the open one and then bank ACTivate  
-                   else                                                 next_state = RDY_NOP;                   // @ loopback
       end
             
       EXEC_REF:             if (AutoPrecharge)                          next_state = RDY_NOP;
@@ -269,9 +293,10 @@ module sdram_ctrl #(
                   
       EXEC_READ_PRECHARGE:                                              next_state = EXEC_READ_WAIT_TRP;
             
-      EXEC_READ_WAIT_TRP:   if (clk_counter == CyclesPerTrp - 1)        next_state = EXEC_READ_ACT;
+      EXEC_READ_WAIT_TRP:   if (clk_counter == CyclesPerTrp - 1)        next_state = EXEC_READ_ACT_SETUP;
                             else                                        next_state = EXEC_READ_WAIT_TRP;        // @ loopback
              
+      EXEC_READ_ACT_SETUP:                                                    next_state = EXEC_READ_ACT;
       EXEC_READ_ACT:                                                    next_state = EXEC_READ_WAIT_TRCD;
              
       EXEC_READ_WAIT_TRCD:  if (clk_counter == CyclesPerTrcd - 1)       next_state = EXEC_READ_READ;
@@ -298,6 +323,8 @@ module sdram_ctrl #(
   always_ff @(posedge i_dram_clk) begin
     refresh_ack        <= '0;
     cmd                <= CMD_NOP;
+    o_dram_addr        <= '0;
+    {o_dram_ba_0, o_dram_ba_1} <= 2'b00;
     word_counter_rst_n <= '0;
     refresh_en         <= 1'b1;
     write_enable       <= 1'b0;
@@ -305,6 +332,7 @@ module sdram_ctrl #(
     {o_dram_ldqm, o_dram_udqm} <= 2'b11;
     o_wr_ready <= 1'b0;
     o_rd_ready <= 1'b0;
+        o_debug <= 1'b0;
     unique case (next_state)
 
       INIT_RESET: begin
@@ -317,24 +345,20 @@ module sdram_ctrl #(
 
       INIT_WAIT: begin
         clk_counter_rst_n           <= 1'b1;
-        o_dram_addr                <= 'z;
         refresh_en                 <= 1'b0;
-        {o_dram_ba_0, o_dram_ba_1} <= 'z;
       end
 
       INIT_PALL: begin
         clk_counter_rst_n          <= 1'b0;
         cmd                        <= CMD_PRE_PALL;
         refresh_en                 <= 1'b0;
-        o_dram_addr                <= {1'b0, 1'b1, 10'b0};
+        o_dram_addr                <= {2'b0, 1'b1, 10'b0};
         {o_dram_ba_0, o_dram_ba_1} <= 2'b00;
       end
 
       INIT_WAIT_TRP: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
         refresh_en                 <= 1'b0;
-        {o_dram_ba_0, o_dram_ba_1} <= 'z;
       end
 
       INIT_REF_1: begin
@@ -347,24 +371,19 @@ module sdram_ctrl #(
 
       INIT_WAIT_TARFC_1: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
         refresh_en                 <= 1'b0;
-        {o_dram_ba_0, o_dram_ba_1} <= 'z;
       end
 
       INIT_REF_2: begin   
         clk_counter_rst_n          <= 1'b0;
         cmd                        <= CMD_REF;
-        o_dram_addr                <= '0;
         refresh_en                 <= 1'b0;
         {o_dram_ba_0, o_dram_ba_1} <= 2'b00;
       end
 
       INIT_WAIT_TARFC_2: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
         refresh_en                 <= 1'b0;
-        {o_dram_ba_0, o_dram_ba_1} <= 'z;
       end
 
       INIT_MRS: begin /* Here Mode Reg is set based on o_dram_addr */
@@ -380,15 +399,16 @@ module sdram_ctrl #(
 
       INIT_WAIT_TMRD: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
         refresh_en                 <= 1'b0;
-        {o_dram_ba_0, o_dram_ba_1} <= 'z;
+      end
+
+      REQ_START: begin
+        clk_counter_rst_n          <= 1'b0;
+        o_ready                    <= 1'b0;
       end
 
       RDY_NOP: begin
         clk_counter_rst_n          <= 1'b0;
-        o_dram_addr                <= 'z;
-        {o_dram_ba_0, o_dram_ba_1} <= 'z;
         o_ready                    <= 1'b1;
       end
 
@@ -402,29 +422,25 @@ module sdram_ctrl #(
 
       EXEC_WAIT_TARFC: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
-        {o_dram_ba_0, o_dram_ba_1} <= 'z;
       end
 
       EXEC_PRECHARGE_ALL: begin
         open_rows                  <= '{default: '0}; // Reset all open rows, as we close them here (all bank precharge)
         clk_counter_rst_n          <= 1'b0;
         cmd                        <= CMD_PRE_PALL;
-        o_dram_addr                <= {1'bz, 1'b1, {10{1'bz}}}; // A[10] = 1 for all bank precharge
+        o_dram_addr                <= {2'b0, 1'b1, 10'b0}; // A[10] = 1 for all bank precharge
         {o_dram_ba_1, o_dram_ba_0} <= 2'b00;
       end
 
       EXEC_WRITE_PRECHARGE: begin
         cmd                        <= CMD_PRE_PALL;
         clk_counter_rst_n          <= 1'b0;
-        o_dram_addr                <= {1'bz, 1'b0, {10{1'bz}}}; // A[10] = 0 for single bank precharge
+        o_dram_addr                <= {2'b0, 1'b0, 10'b0};  // A[10] = 0 for single bank precharge
         {o_dram_ba_1, o_dram_ba_0} <= wr_bank;
       end
 
       EXEC_WRITE_WAIT_TRP: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
-        {o_dram_ba_1, o_dram_ba_0} <= 'z;
       end
 
       EXEC_WRITE_ACT: begin
@@ -436,8 +452,6 @@ module sdram_ctrl #(
 
       EXEC_WRITE_WAIT_TRCD: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
-        {o_dram_ba_1, o_dram_ba_0} <= 'z;
       end
 
       EXEC_WRITE_WRITE: begin
@@ -445,7 +459,7 @@ module sdram_ctrl #(
         clk_counter_rst_n          <= 1'b0;
         cmd                        <= CMD_WR_WRA;
         /* {A[11] <= ?, A[10] <= Auto Precharge, A[9] <= Single Write, A[8] <= ?,  A[0:7] <= Cols} */
-        o_dram_addr                <= {1'b0, AutoPrecharge, 1'b1, 1'b0, wr_col}; 
+        o_dram_addr                <= {2'b0, AutoPrecharge, 1'b0, wr_col}; 
         write_enable               <= 1'b1;
         {o_dram_ba_1, o_dram_ba_0} <= wr_bank;
         {o_dram_ldqm, o_dram_udqm} <= 2'b00; /* Low so we can control the data buffer, DQM Write Latency is 0 cycles */
@@ -456,23 +470,26 @@ module sdram_ctrl #(
       EXEC_WRITE_FINISH_WRITING: begin // We finish writing the BurstLength - 1 bits left, while no command is asserted
         word_counter_rst_n         <= 1'b1;
         clk_counter_rst_n          <= 1'b0;
-        o_dram_addr                <= 'z; 
         write_enable               <= 1'b1;
-        {o_dram_ba_1, o_dram_ba_0} <= 'z;
         {o_dram_ldqm, o_dram_udqm} <= 2'b00; /* Low so we can control the data buffer, DQM Write Latency is 0 cycles */
       end
 
       EXEC_READ_PRECHARGE: begin
         cmd                        <= CMD_PRE_PALL;
         clk_counter_rst_n          <= 1'b0;
-        o_dram_addr                <= {1'bz, 1'b0, {10{1'bz}}}; // A[10] = 0 for single bank precharge
+        o_dram_addr                <= {2'b0, 1'b0, 10'b0};  // A[10] = 0 for single bank precharge
         {o_dram_ba_1, o_dram_ba_0} <= rd_bank;
       end
      
       EXEC_READ_WAIT_TRP: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
-        {o_dram_ba_1, o_dram_ba_0} <= 'z;
+      end
+
+      EXEC_READ_ACT_SETUP: begin
+        clk_counter_rst_n          <= 1'b0;
+        o_dram_addr                <= rd_row; /* {A[0:11] <= Rows} */
+        {o_dram_ba_1, o_dram_ba_0} <= rd_bank;
+        o_debug <= 1'b1;
       end
 
       EXEC_READ_ACT: begin
@@ -484,15 +501,13 @@ module sdram_ctrl #(
 
       EXEC_READ_WAIT_TRCD: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
-        {o_dram_ba_1, o_dram_ba_0} <= 'z;
       end
 
       EXEC_READ_READ: begin
         clk_counter_rst_n          <= 1'b0;
         cmd                        <= CMD_RD_RDA;
         /* {A[11] <= ?, A[10] <= Auto Precharge, A[9] <= Single Write, A[8] <= ?,  A[7:0] <= Cols} */
-        o_dram_addr                <= {1'b0, AutoPrecharge, 1'b1, 1'b0, rd_col}; 
+        o_dram_addr                <= {2'b0, AutoPrecharge, 1'b0, rd_col}; 
         {o_dram_ba_1, o_dram_ba_0} <= rd_bank;
         {o_dram_ldqm, o_dram_udqm} <= 2'b00; /* Low so the SDRAM controls the data buffer, DQM Read Latency is 2 cycles */
         o_rd_ready <= 1'b1; //pop the read request
@@ -500,16 +515,12 @@ module sdram_ctrl #(
 
       EXEC_READ_WAIT_CAS: begin
         clk_counter_rst_n          <= 1'b1;
-        o_dram_addr                <= 'z;
-        {o_dram_ba_1, o_dram_ba_0} <= 'z;
         {o_dram_ldqm, o_dram_udqm} <= 2'b00; /* Low so the SDRAM controls the data buffer, DQM Read Latency is 2 cycles */
       end
 
       EXEC_READ_SAMPLE: begin // We read from io_dram_data here
         word_counter_rst_n         <= 1'b1;
         clk_counter_rst_n          <= 1'b0;
-        o_dram_addr                <= 'z;
-        {o_dram_ba_1, o_dram_ba_0} <= 'z;
         open_rows[rd_bank]         <= {1'b1, rd_row}; // Latch the current row to the open row reg to keep track of what we can read/write to again
         {o_dram_ldqm, o_dram_udqm} <= 2'b00; /* Low so the SDRAM controls the data buffer, DQM Read Latency is 2 cycles */
       end
@@ -520,7 +531,7 @@ module sdram_ctrl #(
   assign io_dram_data = write_enable ? i_wr_data[word_counter] : 'z; // Tri-state buffer
 
   always_ff @(posedge i_sys_clk) begin // Here is what we use to sample the io_dram_data
-    o_debug <= (curr_state == EXEC_READ_SAMPLE);
+    // o_debug <= (curr_state == EXEC_READ_SAMPLE);
     // o_rd_data[word_counter] <= io_dram_data;
 
     if (!i_rst_n) begin

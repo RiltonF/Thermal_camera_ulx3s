@@ -1,0 +1,115 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Mon Jun 23 16:22:10 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Mon Jun 23 16:19:49 2025"
+[dumpfile_size] 402740
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_sdram_top_new.gtkw"
+[timestart] 0
+[size] 2560 1358
+[pos] -1 -1
+*-15.609642 234700 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_sdram_top_new.
+[treeopen] tb_sdram_top_new.dut.
+[sst_width] 274
+[signals_width] 329
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@28
+tb_sdram_top_new.clk
+tb_sdram_top_new.rst
+tb_sdram_top_new.dut.s_new_frame_sync
+tb_sdram_top_new.dut.s_new_line_sync
+@200
+-
+@24
+[color] 6
+tb_sdram_top_new.dut.d_row_count[9:0]
+@28
+tb_sdram_top_new.dut.d_busy
+@24
+tb_sdram_top_new.dut.d_req_bank[1:0]
+tb_sdram_top_new.dut.d_req_row[12:0]
+@22
+tb_sdram_top_new.dut.d_req_col[8:0]
+@24
+tb_sdram_top_new.dut.d_req_count[7:0]
+@200
+-
+@24
+[color] 2
+tb_sdram_top_new.dut.$unm_blk_6.v_debug_addr[23:0]
+tb_sdram_top_new.dut.$unm_blk_6.v_ptr[21:0]
+tb_sdram_top_new.dut.$unm_blk_6.v_col_ptr_start[8:0]
+[color] 2
+tb_sdram_top_new.dut.$unm_blk_6.v_row_ptr_start[12:0]
+@200
+-
+@28
+tb_sdram_top_new.dut.s_load_rd_req_valid
+@22
+tb_sdram_top_new.dut.s_load_rd_req_addr[23:0]
+@28
+tb_sdram_top_new.dut.s_load_rd_req_ready
+@200
+-
+-
+-
+@28
+tb_sdram_top_new.clk
+tb_sdram_top_new.rst
+@200
+-
+-
+@28
+tb_sdram_top_new.dut.s_wr_valid
+@c00022
+tb_sdram_top_new.dut.s_wr_data[17:0]
+@28
+(0)tb_sdram_top_new.dut.s_wr_data[17:0]
+(1)tb_sdram_top_new.dut.s_wr_data[17:0]
+(2)tb_sdram_top_new.dut.s_wr_data[17:0]
+(3)tb_sdram_top_new.dut.s_wr_data[17:0]
+(4)tb_sdram_top_new.dut.s_wr_data[17:0]
+(5)tb_sdram_top_new.dut.s_wr_data[17:0]
+(6)tb_sdram_top_new.dut.s_wr_data[17:0]
+(7)tb_sdram_top_new.dut.s_wr_data[17:0]
+(8)tb_sdram_top_new.dut.s_wr_data[17:0]
+(9)tb_sdram_top_new.dut.s_wr_data[17:0]
+(10)tb_sdram_top_new.dut.s_wr_data[17:0]
+(11)tb_sdram_top_new.dut.s_wr_data[17:0]
+(12)tb_sdram_top_new.dut.s_wr_data[17:0]
+(13)tb_sdram_top_new.dut.s_wr_data[17:0]
+(14)tb_sdram_top_new.dut.s_wr_data[17:0]
+(15)tb_sdram_top_new.dut.s_wr_data[17:0]
+(16)tb_sdram_top_new.dut.s_wr_data[17:0]
+(17)tb_sdram_top_new.dut.s_wr_data[17:0]
+@1401200
+-group_end
+@28
+[color] 7
+tb_sdram_top_new.dut.s_wr_ready
+@200
+-
+@28
+tb_sdram_top_new.dut.s_wr_req_valid
+@22
+tb_sdram_top_new.dut.int_wr_width_adapt_1_to_8.o_data[127:0]
+@28
+[color] 7
+tb_sdram_top_new.dut.s_wr_req_ready
+@200
+-
+@28
+tb_sdram_top_new.dut.s_trig
+@24
+tb_sdram_top_new.dut.s_wr_ptr[21:0]
+@22
+tb_sdram_top_new.dut.s_wr_req_addr[23:0]
+@24
+tb_sdram_top_new.dut.s_wr_col[8:0]
+@25
+tb_sdram_top_new.dut.s_wr_row[12:0]
+[pattern_trace] 1
+[pattern_trace] 0
