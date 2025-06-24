@@ -33,9 +33,10 @@ module mu_drsync (
 
     localparam STAGES = 2;
 
+    (* srl_style = "register" *)
     reg [STAGES-1:0] shiftreg;
 
-    always @(posedge clk )
+    always @(posedge clk or negedge nreset)
         if (!nreset) shiftreg[STAGES-1:0] <= 'b0;
         else shiftreg[STAGES-1:0] <= {shiftreg[STAGES-2:0], in};
 

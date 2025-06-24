@@ -205,10 +205,10 @@ module mu_fifo_async #(
         if (wr_valid & ~wr_full)
             ram[wr_binptr_mem[AW-1:0]] <= wr_din[DW-1:0];
 
-    always @(posedge rd_clk)
-        rd_dout[DW-1:0] <= ram[rd_binptr_mem_nxt[AW-1:0]];
+    // always @(posedge rd_clk)
+    //     rd_dout[DW-1:0] <= ram[rd_binptr_mem_nxt[AW-1:0]];
     // Read port (FIFO output)
-    // assign rd_dout[DW-1:0] = ram[rd_binptr_mem[AW-1:0]];
+    assign rd_dout[DW-1:0] = ram[rd_binptr_mem[AW-1:0]];
 
 endmodule
 
