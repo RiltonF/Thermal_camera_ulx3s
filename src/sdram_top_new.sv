@@ -225,6 +225,7 @@ module sdram_top_new #(
     logic [c_req_addrw-1:0]  s_wr_req_addr;
 
     logic [c_colw+c_roww-1:0] s_wr_ptr;
+    logic [c_colw+c_roww-1:0] s_row_counter;
     logic [c_colw-1:0] s_wr_col;
     logic [c_roww-1:0] s_wr_row;
     logic s_trig;
@@ -238,15 +239,19 @@ module sdram_top_new #(
         if(s_dram_rst) begin
             s_wr_ptr <= '0;
             s_trig <= '0;
+            s_row_counter <= '0;
         end else begin
             if (s_trig & s_wr_valid) begin
                 s_trig <= 1'b0;
                 case (s_wr_data[1:0])
                     2'b11: begin //new frame and new line
                         s_wr_ptr <= '0;
+                        s_row_counter <= '0;
                     end
-                    // 2'b01: begin //only new line
-                    // end
+                    2'b01: begin //only new line
+                        s_row_counter <= s_row_counter + 1'b1;
+                        s_wr_ptr <= (s_row_counter == 0) ? '0 : (640 << (s_row_counter-1));
+                    end
                     default: begin //the rest
                         s_wr_ptr <= s_wr_ptr + 1'b1;
                     end

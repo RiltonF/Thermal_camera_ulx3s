@@ -8,9 +8,10 @@
 module ov7670_rom_sync #(
     parameter WIDTH=16,
     parameter DEPTH=2**8,
+    parameter FULL=1,
     `ifndef SIMULATION
     parameter INIT_F="ov7670_config.mem",
-    // parameter INIT_F="ov7670_config_640x480.mem",
+    parameter INIT_F_FULL="ov7670_config_640x480.mem",
     `else
     //need to give path from tb file, not rom_sync for simulation
     parameter INIT_F="../memory/ov7670_config.mem",
@@ -26,7 +27,7 @@ module ov7670_rom_sync #(
     rom_sync #(
         .WIDTH(WIDTH),
         .DEPTH(DEPTH),
-        .INIT_F(INIT_F)
+        .INIT_F((FULL) ? INIT_F_FULL: INIT_F)
     ) rom_inst (
         .clk,
         .addr,

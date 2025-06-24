@@ -66,6 +66,7 @@ module top #(
     logic signed [16-1:0] vga_x_pos;
     logic signed [16-1:0] vga_y_pos;
 
+    // WARNING: Set the ov7670_rom_sync to enable the full 640x480 config
     //--------------------------------------------------------------------------------
     // CAMERA CONFIG OV7670
     //--------------------------------------------------------------------------------
