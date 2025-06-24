@@ -8,7 +8,7 @@
 module ov7670_rom_sync #(
     parameter WIDTH=16,
     parameter DEPTH=2**8,
-    parameter FULL=1,
+    parameter FULL=0,
     `ifndef SIMULATION
     parameter INIT_F="ov7670_config.mem",
     parameter INIT_F_FULL="ov7670_config_640x480.mem",
