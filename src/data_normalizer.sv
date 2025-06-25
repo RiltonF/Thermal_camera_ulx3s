@@ -28,6 +28,7 @@ module data_normalizer #(
     output logic [ADDRW-1:0] o_wr_addr,
     output logic [    8-1:0] o_wr_data,
 
+    output logic o_debug_busy_req,
     output logic o_debug_overflow
 
 );
@@ -93,7 +94,7 @@ module data_normalizer #(
         .val(s_div_result)
     );
 
-    localparam int c_pipe_len = 2;
+    localparam int c_pipe_len = 3;
     logic [c_pipe_len-1:0] s_pixel_valid;
     logic unsigned [MULTIW-1:0] s_pixel_delta;
     logic unsigned [MULTIW*2-1:0] s_pixel_multi;
@@ -105,7 +106,7 @@ module data_normalizer #(
     assign o_debug_overflow = |(s_pixel_normalized>>8);
     //Clip if values above 255
     assign o_wr_data = (s_pixel_normalized>>8 != '0) ? '1 : s_pixel_normalized;
-    assign o_wr_addr = s_r.addr-2;
+    assign o_wr_addr = s_r.addr-c_pipe_len;
     assign o_wr_valid = s_pixel_valid[c_pipe_len-1];
 
     // Normalization pipeline
@@ -116,6 +117,7 @@ module data_normalizer #(
         s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min) < 0) ? 0:$signed(i_rd_data) - $signed(s_r.min);
         // s_pixel_delta <= ($signed(i_rd_data) - $signed(s_r.min) > s_r.range) ? s_r.range : $signed(i_rd_data) - $signed(s_r.min);
         s_pixel_multi <= s_pixel_delta * s_r.scale_value;
+
     end
 
     always_comb begin
@@ -158,8 +160,11 @@ module data_normalizer #(
     always_ff @(posedge i_clk) begin
         if (i_rst) begin
             s_r <= c_signals_reset;
+            o_debug_busy_req <= '0;
         end else begin
             s_r <= s_r_next;
+            //debug, if not in idle and gets a start
+            if ((s_r.state != IDLE) & i_start) o_debug_busy_req <= 1'b1;
         end
     end
 endmodule
