@@ -17,6 +17,7 @@ module mlx90640_top #(
     input  logic [c_mlx_addrw-1:0] i_fb_rd_addr,
     output logic            [7:0] o_fb_rd_data,
 
+    output logic o_tx_uart,
     inout logic b_sda,
     inout logic b_scl
 );
@@ -64,8 +65,8 @@ module mlx90640_top #(
     mlx90640_controller #(
         .p_sccb_mode   (1'b0),
         .p_slave_addr  (p_slave_addr),
-        .p_delay_const (0)
-        // .p_delay_const (p_delay_const)
+        // .p_delay_const (0)
+        .p_delay_const (p_delay_const)
     ) inst_mlx_controller (
         .i_clk           (i_clk),
         .i_rst           (i_rst),
@@ -384,17 +385,17 @@ module mlx90640_top #(
     // assign s_start_normalization = s_wr_fb_valid & s_page_number & s_wr_fb_addr == (32*24+64-1);
 
     // assign o_debug = {s_wr_normalized_data>>4,
-    assign o_debug = {'0,
-                        // s_range_data[8+:8],
-                        // s_min_data < s_max_data,
-                        // s_wr_normalized_overflow,
-                        // s_wr_normalized_data>>2,
-                        s_wr_normalized_addr,
-                        s_rd_raw_valid,
-                        s_wr_normalized_valid,
-                        // s_start_normalization,
-                        // s_page_number};
-                        s_start_normalization};
+    // assign o_debug = {'0,
+    //                     // s_range_data[8+:8],
+    //                     // s_min_data < s_max_data,
+    //                     // s_wr_normalized_overflow,
+    //                     // s_wr_normalized_data>>2,
+    //                     s_wr_normalized_addr,
+    //                     s_rd_raw_valid,
+    //                     s_wr_normalized_valid,
+    //                     // s_start_normalization,
+    //                     // s_page_number};
+    //                     s_start_normalization};
     // assign o_debug = {s_wr_normalized_data,s_wr_normalized_valid,s_start_normalization};
     // assign o_debug = {o_fb_rd_data>>1,i_fb_rd_valid};
     // assign o_debug = {i_fb_rd_addr>>1,i_fb_rd_valid};
@@ -465,4 +466,88 @@ module mlx90640_top #(
         .rd     (o_fb_rd_data)
     );
 
+    logic s_fifo_valid;
+    logic s_fifo_ready;
+    logic [15:0]s_fifo_data;
+    logic s_tx_fifo_ready;
+    mu_fifo_sync_reg #(
+        .DW(16),
+        .DEPTH(512*2)
+    ) inst_read_req_fifo (
+        .clk            (i_clk),
+        .rst            (i_rst),
+        .wr_valid       (s_rd_fifo_valid & s_rd_fifo_ready),
+        .wr_data        (s_rd_fifo_data),
+        .wr_ready       (s_tx_fifo_ready),
+        .rd_valid       (s_fifo_valid),
+        .rd_data        (s_fifo_data),
+        .rd_ready       (s_fifo_ready)
+    );
+    logic s_tx_ready;
+    typedef enum {START_BYTE, MSB_BYTE, LSB_BYTE} t_tx_states;
+    t_tx_states s_tx_states;
+    logic s_tx_valid;
+    logic [7:0] s_tx_data;
+    logic s_fifo_overlow;
+
+    assign o_debug[7] = s_fifo_overlow; 
+    assign o_debug[6:0] = '0; 
+
+    always_comb begin
+        case (s_tx_states)
+            START_BYTE: begin
+                s_tx_data = 8'haa;
+            end
+            MSB_BYTE: begin
+                s_tx_data = s_fifo_data[15:8];
+            end
+            LSB_BYTE: begin
+                s_tx_data = s_fifo_data[7:0];
+            end
+            default: begin
+                s_tx_data = '0;
+            end
+        endcase
+    end
+    always_ff @(posedge i_clk) begin
+        if (i_rst) begin
+            s_tx_states <= START_BYTE;
+            s_fifo_overlow <= '0;
+        end else begin
+            if (~s_tx_fifo_ready) s_fifo_overlow <= 1'b1;
+            case (s_tx_states)
+                START_BYTE: begin
+                    s_fifo_ready <= 1'b0;
+                    if(s_tx_ready) s_tx_states = MSB_BYTE;
+                end
+                MSB_BYTE: begin
+                    s_fifo_ready <= 1'b0;
+                    if(s_tx_ready) s_tx_states = LSB_BYTE;
+                end
+                LSB_BYTE: begin
+                    if(s_tx_ready) begin
+                        s_tx_states = START_BYTE;
+                        s_fifo_ready <= 1'b1;
+                    end
+                end
+                default: begin
+                    s_fifo_ready <= 1'b0;
+                    s_tx_states = START_BYTE;
+                end
+            endcase
+        end
+    end
+
+
+
+    uart_tx #(
+        .CLK_FREQ(25_000_000)
+    ) inst_uart (
+        .clk(i_clk),
+        .rstn(~i_rst),
+        .valid(s_fifo_valid),
+        .data(s_tx_data),
+        .ready(s_tx_ready),
+        .tx(o_tx_uart)
+    );
 endmodule

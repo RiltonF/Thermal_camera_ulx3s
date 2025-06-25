@@ -22,6 +22,7 @@ module top #(
     output gp14,gp15,gp16,gp17,gp18,gp19,gp20,
     output gn14,gn15,gn16,gn17,gn18,gn19,gn20,
 
+    output ftdi_rxd,
     output gn27,gp27
     
 );
@@ -40,7 +41,7 @@ module top #(
     // assign o_data = 
     //   '{we:s_btn_trig[4]|s_btn_trig[6], sccb_mode:1, addr_slave:'h21, addr_reg:'h1E, burst_num:'d0}; 
 
-    assign gn27 = led[7];
+    assign gn27 = ftdi_rxd;
 
     logic s_cmd_valid, s_cmd_ready;
     t_i2c_cmd s_cmd_data;
@@ -112,10 +113,11 @@ module top #(
       .i_clk(s_clk_sys),
       .i_rst(s_rst),
       .i_trig(s_cam_done | s_btn_trig[6]),
-      // .o_debug(led),
+      .o_debug(led),
       .i_fb_rd_valid,
       .i_fb_rd_addr,
       .o_fb_rd_data,
+      .o_tx_uart(ftdi_rxd),
       .b_sda(gn0),
       .b_scl(gp0)
     );
@@ -208,7 +210,7 @@ module top #(
       s_de[1] <= s_de[0];
     end
 
-    assign led = {i_fb_rd_addr, s_vsync[1], s_hsync[1], s_de[1]};
+    // assign led = {i_fb_rd_addr, s_vsync[1], s_hsync[1], s_de[1]};
 
     // assign s_colors3[0] = s_colors[0];
     // assign s_colors3[1] = s_colors[1];
