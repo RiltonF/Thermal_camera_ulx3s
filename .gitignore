@@ -7,3 +7,5 @@ src/test/*.fst
 src/test/wave*
 src/**/*.old
 src/misc/ecp5
+**/__pycache__/
+*/__pycache__/

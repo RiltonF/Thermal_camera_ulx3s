@@ -24,10 +24,11 @@ def gen_page1():
     buff.append([1]*64) # we read 64 more words to get variables like Ta/VDD/GAIN
     return sum(buff, [])
 
-with open("mlx_subpage0_chess_pattern.mem", "w") as f:
-    for val in gen_page0():
-        f.write(f"{val}\n")
+if __name__ == "__main__":
+    with open("mlx_subpage0_chess_pattern.mem", "w") as f:
+        for val in gen_page0():
+            f.write(f"{val}\n")
 
-with open("mlx_subpage1_chess_pattern.mem", "w") as f:
-    for val in gen_page1():
-        f.write(f"{val}\n")
+    with open("mlx_subpage1_chess_pattern.mem", "w") as f:
+        for val in gen_page1():
+            f.write(f"{val}\n")
