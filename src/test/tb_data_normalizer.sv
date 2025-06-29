@@ -139,11 +139,11 @@ module tb_data_normalizer();
             i_min = 0;
             i_range = 255;
             `WAIT(dut.inst_slow_divider.done)
-            i_rd_data = 0;
+            i_rd_data = 20;
             wait_cycles(2);
             repeat (i_range) begin
                 wait_cycles(1);
-                i_rd_data++;
+                i_rd_data--;
             end
             wait_cycles(10);
         end

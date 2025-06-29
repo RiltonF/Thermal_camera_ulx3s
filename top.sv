@@ -104,6 +104,10 @@ module top #(
     logic [c_mlx_addrw-1:0] i_fb_rd_addr;
     logic            [7:0] o_fb_rd_data;
 
+    logic [7:0] s_mlx_turbo_colors [3];
+    logic [7:0] s_mlx_magma_colors [3];
+    logic [7:0] s_mlx_inferno_colors [3];
+    logic [7:0] s_mlx_grey_colors [3];
     logic signed [16-1:0] vga_x_pos;
     logic signed [16-1:0] vga_y_pos;
 
@@ -113,11 +117,17 @@ module top #(
       .i_clk(s_clk_sys),
       .i_rst(s_rst),
       .i_trig(s_cam_done | s_btn_trig[6]),
+      // .i_trig(s_btn_trig[6]),
+      .i_trig_ffc(s_btn_trig[5]),
       .o_debug(led),
       .i_fb_rd_valid,
       .i_fb_rd_addr,
       .o_fb_rd_data,
       .o_tx_uart(ftdi_rxd),
+      .o_turbo_colors(s_mlx_turbo_colors),
+      .o_magma_colors(s_mlx_magma_colors),
+      .o_inferno_colors(s_mlx_inferno_colors),
+      .o_grey_colors(s_mlx_grey_colors),
       .b_sda(gn0),
       .b_scl(gp0)
     );
@@ -210,35 +220,34 @@ module top #(
       s_de[1] <= s_de[0];
     end
 
-    // assign led = {i_fb_rd_addr, s_vsync[1], s_hsync[1], s_de[1]};
-
-    // assign s_colors3[0] = s_colors[0];
-    // assign s_colors3[1] = s_colors[1];
-    // assign s_colors3[2] = s_colors[2];
-    // assign s_colors3[0] = o_fb_rd_data>>1;
-    // assign s_colors3[1] = o_fb_rd_data>>1;
-    // assign s_colors3[2] = o_fb_rd_data>>1;
-
-    // assign i_fb_rd_addr = vga_x_pos/20 + vga_y_pos/20;
-    // assign i_fb_rd_valid = 1'b1;
     always_comb begin
       logic [15:0] v_x_pos, v_y_pos;
       v_x_pos = vga_x_pos>>3;
       v_y_pos = vga_y_pos>>3;
 
       //32-x for v flip
-      i_fb_rd_addr = v_y_pos*'d32 + (32-v_x_pos);
-      // i_fb_rd_addr = v_y_pos*'d32 + (v_x_pos);
-      i_fb_rd_valid = 1'b1;
+      // i_fb_rd_addr = (v_y_pos<<5) + (31-v_x_pos);
+      // i_fb_rd_addr = (v_y_pos<<5) + (v_x_pos);
+      i_fb_rd_addr = '0;
+      i_fb_rd_valid = 1'b0;
 
       if ((v_x_pos < 32) & (v_y_pos < 24)) begin
-      // i_fb_rd_valid = s_de;
-        s_colors3[0] = o_fb_rd_data;
-        s_colors3[1] = o_fb_rd_data;
-        s_colors3[2] = o_fb_rd_data;
-        // s_colors3[2] = '1;
+          i_fb_rd_valid = s_de[0];
+          i_fb_rd_addr = (v_y_pos<<5) + (31-v_x_pos);
+          s_colors3 = s_mlx_grey_colors;
+      end else if ((v_x_pos < 32) & (v_y_pos >= 24) & (v_y_pos < 24*2)) begin
+          i_fb_rd_valid = s_de[0];
+          i_fb_rd_addr = ((v_y_pos+8)<<5) + (31-v_x_pos);
+          s_colors3 = s_mlx_turbo_colors;
+      end else if ((v_x_pos >= 32) & (v_x_pos < 32*2) & (v_y_pos < 24)) begin
+          i_fb_rd_valid = s_de[0];
+          i_fb_rd_addr = (v_y_pos<<5) + (31-v_x_pos)+32;
+          s_colors3 = s_mlx_inferno_colors;
+      end else if ((v_x_pos >= 32) & (v_x_pos < 32*2) & (v_y_pos >= 24) & (v_y_pos < 24*2)) begin
+          i_fb_rd_valid = s_de[0];
+          i_fb_rd_addr = ((v_y_pos+8)<<5) + (31-v_x_pos)+32;
+          s_colors3 = s_mlx_magma_colors;
       end else begin
-      // i_fb_rd_valid = 1'b0;
         s_colors3[0] = s_colors[0];
         s_colors3[1] = s_colors[1];
         s_colors3[2] = s_colors[2];

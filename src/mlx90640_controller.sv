@@ -3,6 +3,9 @@
 /* verilator lint_off WIDTHEXPAND */
 import package_i2c::t_i2c_cmd_16b;
 
+// TODO: Put this into a dedicated macros file and include it here
+// `define UART_DUMPING
+
 module mlx90640_controller #(
     parameter bit p_sccb_mode = 1'b0,
     parameter int p_slave_addr = 6'h33,
@@ -98,7 +101,12 @@ module mlx90640_controller #(
     localparam c_control_register = 16'h800D;
     //{reserved, read pattern, resolution ADC, refresh rate, subpage sel, ena
     //sub, ena hold, reserved, ena subpage mode}
-    localparam c_control_config_val = {3'b0, 1'b1, 2'b10, 3'b110, 3'b000, 1'b0, 1'b0, 1'b0, 1'b1};
+    `ifndef UART_DUMPING
+        localparam c_control_config_val = {3'b0, 1'b1, 2'b10, 3'b110, 3'b000, 1'b0, 1'b0, 1'b0, 1'b1};
+    `else
+        //Have to reduce framerate if trying to dump with uart
+        localparam c_control_config_val = {3'b0, 1'b1, 2'b10, 3'b010, 3'b000, 1'b0, 1'b0, 1'b0, 1'b1};
+    `endif
 
     localparam c_ram_start_addr = 16'h0400;
     localparam c_ram_read_words = 32*24+64;
@@ -126,7 +134,11 @@ module mlx90640_controller #(
                 if (i_start) begin
                     s_r_next.state = CMD_LOAD;
                     // s_r_next.cmd_type = STATUS_READ;
-                    s_r_next.cmd_type = EEPROM_READ;
+                    `ifndef SIMULATION
+                        s_r_next.cmd_type = EEPROM_READ;
+                    `else
+                        s_r_next.cmd_type = RAM_READ;
+                    `endif
                     s_r_next.done = 1'b0;
                 end
             end

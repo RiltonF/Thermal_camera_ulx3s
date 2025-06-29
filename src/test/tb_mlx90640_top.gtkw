@@ -1,19 +1,17 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Wed May 28 08:18:58 2025
+[*] Wed Jun 25 14:27:03 2025
 [*]
 [dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
-[dumpfile_mtime] "Wed May 28 08:16:06 2025"
-[dumpfile_size] 13981
+[dumpfile_mtime] "Wed Jun 25 14:23:49 2025"
+[dumpfile_size] 24211
 [savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_mlx90640_top.gtkw"
 [timestart] 0
 [size] 2560 1358
 [pos] -1 -1
-*-23.079258 75210000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-24.079258 129510000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_mlx90640_top.
 [treeopen] tb_mlx90640_top.dut.
-[treeopen] tb_mlx90640_top.dut.inst_i2c_master_mlx.
-[treeopen] tb_mlx90640_top.dut.inst_i2c_master_mlx.inst_i2c_master.
 [treeopen] tb_mlx90640_top.dut.inst_i2c_master_mlx.inst_i2c_master.gen_16bit_i2c_req_manager.
 [sst_width] 432
 [signals_width] 291
@@ -36,7 +34,7 @@ tb_mlx90640_top.dut.s_cmd_rd_fifo_ready
 tb_mlx90640_top.dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.d_bit_counter[3:0]
 @200
 -
-@29
+@28
 tb_mlx90640_top.dut.s_cmd_valid
 @22
 tb_mlx90640_top.dut.s_cmd_data[34:0]
@@ -47,103 +45,24 @@ tb_mlx90640_top.dut.s_cmd_ready
 @28
 [color] 3
 tb_mlx90640_top.dut.s_cmd_log_valid
-@c00022
-tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-@28
-(0)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(1)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(2)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(3)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(4)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(5)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(6)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(7)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(8)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(9)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(10)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(11)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-(12)tb_mlx90640_top.dut.s_cmd_log_data[12:0]
-@1401200
--group_end
-@28
-tb_mlx90640_top.dut.s_cmd_log_ready
 @200
 -
 @28
-[color] 3
-tb_mlx90640_top.dut.s_rd_fifo_valid
-@c00022
-tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
+tb_mlx90640_top.dut.inst_mlx_raw_fb_mem.clk
+@22
+tb_mlx90640_top.dut.inst_mlx_raw_fb_mem.raddr[9:0]
+tb_mlx90640_top.dut.inst_mlx_raw_fb_mem.rd[15:0]
+tb_mlx90640_top.dut.inst_mlx_raw_fb_mem.rd_reg[15:0]
 @28
-(0)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(1)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(2)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(3)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(4)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(5)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(6)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(7)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(8)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(9)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(10)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(11)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(12)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(13)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(14)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-(15)tb_mlx90640_top.dut.s_rd_fifo_data[15:0]
-@1401200
--group_end
+tb_mlx90640_top.dut.inst_mlx_raw_fb_mem.re
+@22
+tb_mlx90640_top.dut.inst_mlx_raw_fb_mem.waddr[9:0]
 @28
-[color] 7
-tb_mlx90640_top.dut.s_rd_fifo_ready
-@200
--
-@28
-[color] 2
-tb_mlx90640_top.dut.s_rd_log_valid
-@c00022
-tb_mlx90640_top.dut.s_rd_log_data[12:0]
-@28
-(0)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(1)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(2)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(3)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(4)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(5)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(6)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(7)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(8)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(9)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(10)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(11)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-(12)tb_mlx90640_top.dut.s_rd_log_data[12:0]
-@1401200
--group_end
-@28
-[color] 7
-tb_mlx90640_top.dut.s_rd_log_ready
-@200
--
-@24
+tb_mlx90640_top.dut.inst_mlx_raw_fb_mem.we
+@22
+tb_mlx90640_top.dut.inst_mlx_raw_fb_mem.wr[15:0]
+@25
+[color] 6
 tb_mlx90640_top.dut.d_state[31:0]
-tb_mlx90640_top.dut.d_word_counter[10:0]
-@200
--
-@28
-tb_mlx90640_top.dut.s_wr_fb_valid
-@24
-tb_mlx90640_top.dut.s_wr_fb_addr[9:0]
-@22
-tb_mlx90640_top.dut.s_wr_fb_data[16:0]
-@200
--
-@24
-tb_mlx90640_top.dut.inst_i2c_master_mlx.inst_i2c_master.gen_16bit_i2c_req_manager.inst_i2c_req_manager.d_active_gen[31:0]
-@22
-tb_mlx90640_top.dut.inst_i2c_master_mlx.inst_i2c_master.gen_16bit_i2c_req_manager.inst_i2c_req_manager.d_addr_reg[15:0]
-tb_mlx90640_top.dut.inst_i2c_master_mlx.inst_i2c_master.gen_16bit_i2c_req_manager.inst_i2c_req_manager.d_burst_num[10:0]
-tb_mlx90640_top.dut.inst_i2c_master_mlx.inst_i2c_master.gen_16bit_i2c_req_manager.inst_i2c_req_manager.d_byte_counter[10:0]
-tb_mlx90640_top.dut.inst_i2c_master_mlx.inst_i2c_master.inst_i2c_byte_gen.i_wr_byte[7:0]
-tb_mlx90640_top.dut.inst_i2c_master_mlx.inst_i2c_master.gen_16bit_i2c_req_manager.inst_i2c_req_manager.d_addr_reg[15:0]
 [pattern_trace] 1
 [pattern_trace] 0
