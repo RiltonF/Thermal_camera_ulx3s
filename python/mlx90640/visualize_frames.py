@@ -10,6 +10,8 @@ sys.path.insert(0, parent_dir)
 
 from mlx_mem_chess_pattern_generator import gen_page0, gen_page1
 from serial_capture import get_dump, to_signed
+from rp2040_frame_dump import frame_dump, frame_dump2
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -112,16 +114,30 @@ def ffc_offset(frames, pixel_mean, ffc_frame):
             frames[n][i] = frames[n][i] + pixel_mean - ffc_frame[i]
     return frames
 
+def cleanup_frame_dump(frames):
+    signed_frames = []
+    for frame in frames:
+        signed_frame = []
+        for val in frame:
+            signed_frame.append(to_signed(16, val))
+        signed_frames.append(signed_frame)
+    return signed_frames
         
 def main():
-    ser = serial.Serial('/dev/ttyUSB0', 115200)
-    frames = get_dump(ser,4)
+    ser = serial.Serial('/dev/ttyUSB1', 115200)
+    frames = get_dump(ser,4) # from serial
+
+    # frames = cleanup_frame_dump(frame_dump) # from rp2040 micro
+    # frames = cleanup_frame_dump(frame_dump2) # from rp2040 micro
+    # full_frames = frames
+    # print(frames)
+
     full_frames = frame_extractor(frames)
     full_frames = frame_offset(full_frames)
 
     # generate_average_ffc_offset(full_frames)
     # full_frames = ffc_offset(full_frames,ffc_frame_mean,ffc_frame)
-    full_frames = ffc_offset(full_frames,ffc_frame_mean_single,ffc_frame_single)
+    # full_frames = ffc_offset(full_frames,ffc_frame_mean_single,ffc_frame_single)
 
 
     for i in range(0,len(frames),2):

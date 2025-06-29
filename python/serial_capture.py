@@ -1,6 +1,5 @@
 import serial
 
-ser = serial.Serial('/dev/ttyUSB0', 115200)
 
 def to_signed(bits, n):
     if n >= 2**(bits - 1):
@@ -104,4 +103,5 @@ def get_dump(ser, frames):
                             continue
 
 if __name__ == "__main__":
+    ser = serial.Serial('/dev/ttyUSB0', 115200)
     get_dump(ser, 4)
