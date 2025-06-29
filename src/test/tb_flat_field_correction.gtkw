@@ -1,0 +1,114 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Fri Jun 27 15:57:09 2025
+[*]
+[dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
+[dumpfile_mtime] "Fri Jun 27 15:45:07 2025"
+[dumpfile_size] 19614
+[savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_flat_field_correction.gtkw"
+[timestart] 76477700
+[size] 2560 1358
+[pos] -1 -1
+*-16.154062 76801000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_flat_field_correction.
+[sst_width] 274
+[signals_width] 282
+[sst_expanded] 1
+[sst_vpaned_height] 423
+@420
+tb_flat_field_correction.dut.ADDRW
+tb_flat_field_correction.dut.DATAW
+tb_flat_field_correction.dut.MAX_ADDR
+tb_flat_field_correction.dut.SAMPLE_FRAMES
+tb_flat_field_correction.dut.c_accumilator_width
+tb_flat_field_correction.dut.c_signals_reset
+@200
+-
+@22
+tb_flat_field_correction.dut.d_addr[9:0]
+@24
+tb_flat_field_correction.dut.d_frame_avg[51:0]
+@28
+tb_flat_field_correction.dut.d_frame_count
+@c00024
+tb_flat_field_correction.dut.d_pixel_sum[26:0]
+@28
+(0)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(1)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(2)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(3)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(4)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(5)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(6)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(7)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(8)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(9)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(10)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(11)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(12)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(13)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(14)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(15)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(16)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(17)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(18)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(19)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(20)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(21)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(22)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(23)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(24)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(25)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+(26)tb_flat_field_correction.dut.d_pixel_sum[26:0]
+@1401200
+-group_end
+@24
+[color] 7
+tb_flat_field_correction.dut.d_state[31:0]
+@200
+-
+@28
+tb_flat_field_correction.dut.i_clk
+tb_flat_field_correction.dut.i_rst
+@200
+-
+@28
+tb_flat_field_correction.dut.i_start
+@200
+-
+@28
+tb_flat_field_correction.dut.i_wr_valid
+@24
+tb_flat_field_correction.dut.i_wr_addr[9:0]
+tb_flat_field_correction.dut.i_wr_data[15:0]
+@200
+-
+@28
+tb_flat_field_correction.dut.i_rd_valid
+@24
+tb_flat_field_correction.dut.i_rd_addr[9:0]
+tb_flat_field_correction.dut.o_rd_data[15:0]
+tb_flat_field_correction.dut.o_frame_avg[15:0]
+@200
+-
+@28
+tb_flat_field_correction.dut.s_raw_valid
+@24
+tb_flat_field_correction.dut.s_raw_addr[9:0]
+tb_flat_field_correction.dut.s_raw_data[15:0]
+@200
+-
+@28
+tb_flat_field_correction.dut.s_wr_valid
+@24
+tb_flat_field_correction.dut.s_wr_addr[9:0]
+tb_flat_field_correction.dut.s_wr_data[15:0]
+@200
+-
+@29
+tb_flat_field_correction.dut.s_rd_valid
+@24
+tb_flat_field_correction.dut.s_rd_addr[9:0]
+tb_flat_field_correction.dut.s_rd_data[15:0]
+[pattern_trace] 1
+[pattern_trace] 0
