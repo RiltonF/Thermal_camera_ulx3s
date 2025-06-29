@@ -9,3 +9,4 @@ src/**/*.old
 src/misc/ecp5
 **/__pycache__/
 */__pycache__/
+*.bkp
