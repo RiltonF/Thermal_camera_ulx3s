@@ -301,7 +301,7 @@ module mlx90640_top #(
         s_wr_fb_valid <= s_wr_ram_valid;
         s_wr_fb_addr <= s_wr_read_addr;
         s_wr_fb_data <= s_wr_read_data;
-        s_wr_fb_page_number <= s_rd_log_data.page_number;
+        if (s_rd_log_valid & s_rd_log_data.is_ram_data & ~s_rd_log_data.is_eeprom_data) s_wr_fb_page_number <= s_rd_log_data.page_number;
     end
 
     // NOTE: might need to add two read ports, if going to use calibration
@@ -423,7 +423,7 @@ module mlx90640_top #(
     flat_field_correction #(
         .DATAW         ($bits(s_wr_read_data)),
         .MAX_ADDR      (32*24-1),
-        .SAMPLE_FRAMES (2) // 2?
+        .SAMPLE_FRAMES (1) // 2?
     ) inst_ffc_calibration (
         .i_clk       (i_clk),
         .i_rst       (i_rst),
@@ -433,6 +433,7 @@ module mlx90640_top #(
         .i_wr_valid  (s_wr_fb_valid_page),
         .i_wr_addr   (s_wr_fb_addr),
         .i_wr_data   (s_ffc_wr_data),
+        .i_subpage_num(s_wr_fb_page_number),
         //Read interface, same as the eeprom connections
         .i_rd_valid  (s_wr_ram_valid),
         .i_rd_addr   (s_wr_read_addr),

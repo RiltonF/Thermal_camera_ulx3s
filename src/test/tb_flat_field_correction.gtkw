@@ -1,12 +1,12 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Fri Jun 27 15:57:09 2025
+[*] Sun Jun 29 17:16:47 2025
 [*]
 [dumpfile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/wave.fst"
-[dumpfile_mtime] "Fri Jun 27 15:45:07 2025"
-[dumpfile_size] 19614
+[dumpfile_mtime] "Sun Jun 29 17:15:49 2025"
+[dumpfile_size] 34177
 [savefile] "/home/bob/Projects/ulx3s/Thermal_camera_ulx3s/src/test/tb_flat_field_correction.gtkw"
-[timestart] 76477700
+[timestart] 51390800
 [size] 2560 1358
 [pos] -1 -1
 *-16.154062 76801000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
@@ -62,6 +62,9 @@ tb_flat_field_correction.dut.d_pixel_sum[26:0]
 (26)tb_flat_field_correction.dut.d_pixel_sum[26:0]
 @1401200
 -group_end
+@28
+[color] 2
+tb_flat_field_correction.dut.d_subpage
 @24
 [color] 7
 tb_flat_field_correction.dut.d_state[31:0]
@@ -74,6 +77,8 @@ tb_flat_field_correction.dut.i_rst
 -
 @28
 tb_flat_field_correction.dut.i_start
+@29
+tb_flat_field_correction.dut.i_subpage_num
 @200
 -
 @28
@@ -105,7 +110,7 @@ tb_flat_field_correction.dut.s_wr_addr[9:0]
 tb_flat_field_correction.dut.s_wr_data[15:0]
 @200
 -
-@29
+@28
 tb_flat_field_correction.dut.s_rd_valid
 @24
 tb_flat_field_correction.dut.s_rd_addr[9:0]

@@ -24,6 +24,7 @@ module tb_flat_field_correction();
     logic [ADDRW-1:0] i_rd_addr;
     logic [DATAW-1:0] o_rd_data;
     logic signed [DATAW-1:0] o_frame_avg;
+    logic i_subpage_num;
 
     flat_field_correction 
     #(
@@ -42,6 +43,7 @@ module tb_flat_field_correction();
     .i_rd_valid  (i_rd_valid),
     .i_rd_addr   (i_rd_addr),
     .o_rd_data   (o_rd_data),
+    .i_subpage_num,
     .o_frame_avg (o_frame_avg)
     );
 
@@ -71,6 +73,7 @@ module tb_flat_field_correction();
         i_rd_valid = 0;
         i_rd_addr = 0;
         i_start = 0;
+        i_subpage_num = 0;
         wait_cycles(4);
         rst = 0;
     end
@@ -101,6 +104,7 @@ module tb_flat_field_correction();
                 i_wr_addr = 0;
                 i_wr_data = 0;
                 wait_cycles(4);
+                i_subpage_num = ~i_subpage_num;
             end
         end
     end
